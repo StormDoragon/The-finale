@@ -34,7 +34,7 @@ Use Node.js 22 or newer.
    cp .env.example .env.local
    ```
 
-4. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to `.env.local`. Legacy projects can use `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead. Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` for local development and set it to the canonical deployment URL in production.
+4. Replace the placeholders in `.env.local` with your Supabase project values. The app reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` first and uses `NEXT_PUBLIC_SUPABASE_ANON_KEY` only as a legacy fallback. For local development, set `NEXT_PUBLIC_SITE_URL=http://localhost:3000`.
 
 5. In Supabase Authentication settings, add `http://localhost:3000/auth/callback` as an allowed redirect URL. Email/password authentication must be enabled.
 
@@ -48,13 +48,17 @@ Use Node.js 22 or newer.
 
 ## Vercel authentication configuration
 
-Set these variables for every Vercel environment that should support authentication, then redeploy so the new values are included in the deployment:
+Vercel must contain all three of these variables for every environment that should support authentication:
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (preferred) or `NEXT_PUBLIC_SUPABASE_ANON_KEY` (legacy)
-- `NEXT_PUBLIC_SITE_URL` (the canonical `https://...` deployment URL)
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://fpmxkuayicgaiisipglv.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_9vA3m-xJUCCzQCH-B1AEvw_1tNsCJMt
+NEXT_PUBLIC_SITE_URL=https://your-vercel-domain.vercel.app
+```
 
-Login and signup use server actions, so Supabase requests and `[auth]` diagnostics appear in Vercel function logs rather than as direct Supabase requests in the browser Network tab. Never use a Supabase secret or `service_role` key for these variables.
+Replace `NEXT_PUBLIC_SITE_URL` with the canonical URL of the corresponding Vercel environment. Do not set `NEXT_PUBLIC_SUPABASE_URL` to an example or placeholder project URL. After saving the variables, redeploy so Next.js includes them in the deployment. `NEXT_PUBLIC_SUPABASE_ANON_KEY` is supported only as a legacy fallback when the publishable key is absent.
+
+Login and signup use server actions, so Supabase requests and `[auth]` diagnostics appear in Vercel function logs rather than as direct Supabase requests in the browser Network tab. The Vercel logs should report `supabaseHost: 'fpmxkuayicgaiisipglv.supabase.co'` and `keySource: 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'`. Never use a Supabase secret or `service_role` key for these variables.
 
 ## First working loop
 

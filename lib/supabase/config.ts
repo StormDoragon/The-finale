@@ -6,14 +6,16 @@ type SupabaseConfig = {
     | "NEXT_PUBLIC_SUPABASE_ANON_KEY";
 };
 
-function readEnv(name: string) {
-  return process.env[name]?.trim() || undefined;
+function readEnv(value: string | undefined) {
+  return value?.trim() || undefined;
 }
 
 export function getSupabaseConfig(): SupabaseConfig | null {
-  const url = readEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const publishableKey = readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
-  const anonKey = readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const url = readEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const publishableKey = readEnv(
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  );
+  const anonKey = readEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const key = publishableKey || anonKey;
 
   if (!url || !key) {
@@ -25,6 +27,12 @@ export function getSupabaseConfig(): SupabaseConfig | null {
     parsedUrl = new URL(url);
   } catch {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL must be a valid absolute URL");
+  }
+
+  if (parsedUrl.hostname === "your-project.supabase.co") {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL still uses the placeholder Supabase project URL",
+    );
   }
 
   if (parsedUrl.protocol !== "https:" && parsedUrl.hostname !== "localhost") {
@@ -43,9 +51,10 @@ export function getSupabaseConfig(): SupabaseConfig | null {
 }
 
 export function getSiteUrl() {
-  const configuredUrl = readEnv("NEXT_PUBLIC_SITE_URL");
+  const configuredUrl = readEnv(process.env.NEXT_PUBLIC_SITE_URL);
   const vercelUrl =
-    readEnv("VERCEL_PROJECT_PRODUCTION_URL") || readEnv("VERCEL_URL");
+    readEnv(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
+    readEnv(process.env.VERCEL_URL);
   const siteUrl =
     configuredUrl ||
     (vercelUrl
