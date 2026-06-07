@@ -34,7 +34,7 @@ Use Node.js 22 or newer.
    cp .env.example .env.local
    ```
 
-4. Add your project URL and anon key to `.env.local`. Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` for local development and change it to your deployment URL in production.
+4. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to `.env.local`. Legacy projects can use `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead. Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` for local development and set it to the canonical deployment URL in production.
 
 5. In Supabase Authentication settings, add `http://localhost:3000/auth/callback` as an allowed redirect URL. Email/password authentication must be enabled.
 
@@ -45,6 +45,16 @@ Use Node.js 22 or newer.
    ```
 
 7. Open [http://localhost:3000](http://localhost:3000), create an account, and sign in. If email confirmation is enabled in Supabase, confirm the message first.
+
+## Vercel authentication configuration
+
+Set these variables for every Vercel environment that should support authentication, then redeploy so the new values are included in the deployment:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (preferred) or `NEXT_PUBLIC_SUPABASE_ANON_KEY` (legacy)
+- `NEXT_PUBLIC_SITE_URL` (the canonical `https://...` deployment URL)
+
+Login and signup use server actions, so Supabase requests and `[auth]` diagnostics appear in Vercel function logs rather than as direct Supabase requests in the browser Network tab. Never use a Supabase secret or `service_role` key for these variables.
 
 ## First working loop
 
