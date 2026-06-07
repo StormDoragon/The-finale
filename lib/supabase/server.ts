@@ -1,31 +1,51 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { describeError, getSupabaseConfig } from "@/lib/supabase/config";
 
 export const hasSupabaseEnv = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+    (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
 );
 
 export async function createClient() {
-  if (!hasSupabaseEnv) return null;
+  let config: ReturnType<typeof getSupabaseConfig>;
+  try {
+    config = getSupabaseConfig();
+  } catch (error) {
+    console.error("[auth] Invalid Supabase configuration", describeError(error));
+    throw error;
+  }
+
+  if (!config) {
+    console.warn("[auth] Supabase client not created: environment is incomplete", {
+      hasUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
+      hasPublishableKey: Boolean(
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim(),
+      ),
+      hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
+    });
+    return null;
+  }
+
+  console.info("[auth] Creating Supabase server client", {
+    supabaseHost: new URL(config.url).host,
+    keySource: config.keySource,
+  });
 
   const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          } catch {
-            // Server Components cannot write cookies. Middleware refreshes sessions.
-          }
-        },
+  return createServerClient(config.url, config.key, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          );
+        } catch {
+          // Server Components cannot write cookies. Proxy refreshes sessions.
+        }
       },
     },
-  );
+  });
 }
