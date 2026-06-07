@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+.field {
+  width: 100%;
+  border: 1px solid #d9dde4;
+  border-radius: 0.7rem;
+  background: white;
+  padding: 0.72rem 0.85rem;
+  outline: none;
+}
+.field:focus {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+.label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  background: #0f172a;
+  padding: 0.7rem 1rem;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: 0.15s;
+}
+.btn-primary:hover {
+  background: #1e293b;
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9dde4;
+  border-radius: 0.7rem;
+  background: white;
+  padding: 0.62rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.card {
+  border: 1px solid #e2e5e9;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
