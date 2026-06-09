@@ -57,6 +57,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 
 Copy both values from the same Supabase project's **Connect** dialog. Do not copy the example values literally, include quotes, append `/auth/v1`, or paste an entire `NAME=value` assignment into the Vercel value field. Redeploy after changing either variable because `NEXT_PUBLIC_*` values are embedded in the browser bundle at build time. `NEXT_PUBLIC_SUPABASE_ANON_KEY` remains available as a legacy fallback.
 
+If Vercel logs `NEXT_PUBLIC_SUPABASE_URL still uses the placeholder Supabase project URL`, the deployment is still using `https://your-project-ref.supabase.co`. Replace that value in **Vercel Project Settings > Environment Variables** with the real Project URL from Supabase, update the publishable key from the same project, and redeploy. Invalid values no longer fail the Next.js build; the deployment starts in read-only demo mode and displays the configuration error on the sign-in page until the variables are corrected.
+
 Authentication runs through the browser Supabase client, so password sign-in, account creation, and confirmation-code exchange do not depend on a Vercel Function reaching Supabase. The SSR proxy validates the resulting access token with `getClaims()` and stores refreshed cookies. If the UI reports `Failed to fetch`, inspect the browser Network panel: a request to an unexpected hostname means `NEXT_PUBLIC_SUPABASE_URL` is wrong, while DNS failures against the correct hostname usually mean the Supabase project is paused, deleted, or unavailable from the user's network.
 
 In Supabase **Authentication > URL Configuration**:

@@ -15,7 +15,7 @@ export async function createClient() {
     config = getSupabaseConfig();
   } catch (error) {
     console.error("[auth] Invalid Supabase configuration", describeError(error));
-    throw error;
+    return null;
   }
 
   if (!config) {
