@@ -1,12 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { describeError, getSupabaseConfig } from "@/lib/supabase/config";
+import {
+  describeError,
+  getSupabaseConfig,
+  getSupabaseConfigStatus,
+} from "@/lib/supabase/config";
 
-export const hasSupabaseEnv = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-    (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()),
-);
+export const supabaseConfigStatus = getSupabaseConfigStatus();
+export const hasSupabaseEnv = supabaseConfigStatus.configured;
 
 export async function createClient() {
   let config: ReturnType<typeof getSupabaseConfig>;
@@ -14,7 +15,7 @@ export async function createClient() {
     config = getSupabaseConfig();
   } catch (error) {
     console.error("[auth] Invalid Supabase configuration", describeError(error));
-    throw error;
+    return null;
   }
 
   if (!config) {

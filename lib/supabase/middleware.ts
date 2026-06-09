@@ -11,7 +11,12 @@ export async function updateSession(request: NextRequest) {
     config = getSupabaseConfig();
   } catch (error) {
     console.error("[auth] Proxy configuration error", describeError(error));
-    return NextResponse.next({ request });
+    if (isLogin || isAuthCallback) return NextResponse.next({ request });
+
+    const target = request.nextUrl.clone();
+    target.pathname = "/login";
+    target.search = "?error=Authentication+is+misconfigured";
+    return NextResponse.redirect(target);
   }
 
   if (!config) return NextResponse.next({ request });
@@ -39,10 +44,10 @@ export async function updateSession(request: NextRequest) {
 
   let isAuthenticated = false;
   try {
-    const result = await supabase.auth.getUser();
-    isAuthenticated = Boolean(result.data.user);
-    if (result.error) {
-      console.warn("[auth] Proxy getUser rejected", {
+    const result = await supabase.auth.getClaims();
+    isAuthenticated = Boolean(result.data?.claims);
+    if (result.error && result.error.name !== "AuthSessionMissingError") {
+      console.warn("[auth] Proxy getClaims rejected", {
         name: result.error.name,
         message: result.error.message,
         status: result.error.status,
@@ -50,7 +55,7 @@ export async function updateSession(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error("[auth] Proxy getUser fetch failed", describeError(error));
+    console.error("[auth] Proxy getClaims failed", describeError(error));
     if (isLogin || isAuthCallback) return response;
 
     const target = request.nextUrl.clone();
