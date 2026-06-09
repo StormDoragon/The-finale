@@ -2,82 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { describeError, getSiteUrl } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 async function requireClient() {
   const supabase = await createClient();
   if (!supabase) redirect("/login?message=Connect+Supabase+to+save+changes");
   return supabase;
-}
-
-const authUnavailableMessage =
-  "Unable to reach the authentication service. Please try again or check the deployment logs.";
-
-export async function login(formData: FormData) {
-  const supabase = await requireClient();
-  const email = String(formData.get("email") || "");
-  const password = String(formData.get("password") || "");
-  let authError: string | null = null;
-
-  console.info("[auth] signInWithPassword started");
-  try {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.warn("[auth] signInWithPassword rejected", {
-        name: error.name,
-        message: error.message,
-        status: error.status,
-        code: error.code,
-      });
-      authError = error.message;
-    } else {
-      console.info("[auth] signInWithPassword completed");
-    }
-  } catch (error) {
-    console.error(
-      "[auth] signInWithPassword fetch failed",
-      describeError(error),
-    );
-    authError = authUnavailableMessage;
-  }
-
-  if (authError) redirect(`/login?error=${encodeURIComponent(authError)}`);
-  redirect("/dashboard");
-}
-
-export async function signUp(formData: FormData) {
-  const supabase = await requireClient();
-  const email = String(formData.get("email") || "");
-  const password = String(formData.get("password") || "");
-  const emailRedirectTo = `${getSiteUrl()}/auth/callback`;
-  let authError: string | null = null;
-
-  console.info("[auth] signUp started", { emailRedirectTo });
-  try {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo },
-    });
-    if (error) {
-      console.warn("[auth] signUp rejected", {
-        name: error.name,
-        message: error.message,
-        status: error.status,
-        code: error.code,
-      });
-      authError = error.message;
-    } else {
-      console.info("[auth] signUp completed");
-    }
-  } catch (error) {
-    console.error("[auth] signUp fetch failed", describeError(error));
-    authError = authUnavailableMessage;
-  }
-
-  if (authError) redirect(`/login?error=${encodeURIComponent(authError)}`);
-  redirect("/login?message=Check+your+email+to+confirm+your+account");
 }
 
 export async function logout() {

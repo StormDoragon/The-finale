@@ -23,10 +23,10 @@ Use Node.js 22 or newer.
 1. Install dependencies:
 
    ```bash
-   npm install
+   npm ci
    ```
 
-2. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor.
+2. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor. The script is safe to rerun and scopes every row to the account that created it.
 
 3. Copy the environment template:
 
@@ -34,7 +34,7 @@ Use Node.js 22 or newer.
    cp .env.example .env.local
    ```
 
-4. Replace the placeholders in `.env.local` with your Supabase project values. The app reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` first and uses `NEXT_PUBLIC_SUPABASE_ANON_KEY` only as a legacy fallback. For local development, set `NEXT_PUBLIC_SITE_URL=http://localhost:3000`.
+4. Replace the placeholders in `.env.local` with your Supabase project values. The app reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` first and uses `NEXT_PUBLIC_SUPABASE_ANON_KEY` only as a legacy fallback.
 
 5. In Supabase Authentication settings, add `http://localhost:3000/auth/callback` as an allowed redirect URL. Email/password authentication must be enabled.
 
@@ -48,17 +48,28 @@ Use Node.js 22 or newer.
 
 ## Vercel authentication configuration
 
-Vercel must contain all three of these variables for every environment that should support authentication:
+Vercel must contain the Supabase project URL and publishable key for every environment that should support authentication:
 
 ```dotenv
-NEXT_PUBLIC_SUPABASE_URL=https://fpmxkuayicgaiisipglv.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_9vA3m-xJUCCzQCH-B1AEvw_1tNsCJMt
-NEXT_PUBLIC_SITE_URL=https://your-vercel-domain.vercel.app
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 ```
 
-Replace `NEXT_PUBLIC_SITE_URL` with the canonical URL of the corresponding Vercel environment. Do not set `NEXT_PUBLIC_SUPABASE_URL` to an example or placeholder project URL. After saving the variables, redeploy so Next.js includes them in the deployment. `NEXT_PUBLIC_SUPABASE_ANON_KEY` is supported only as a legacy fallback when the publishable key is absent.
+Copy both values from the same Supabase project's **Connect** dialog. Do not copy the example values literally, include quotes, append `/auth/v1`, or paste an entire `NAME=value` assignment into the Vercel value field. Redeploy after changing either variable because `NEXT_PUBLIC_*` values are embedded in the browser bundle at build time. `NEXT_PUBLIC_SUPABASE_ANON_KEY` remains available as a legacy fallback.
 
-Login and signup use server actions, so Supabase requests and `[auth]` diagnostics appear in Vercel function logs rather than as direct Supabase requests in the browser Network tab. The Vercel logs should report `supabaseHost: 'fpmxkuayicgaiisipglv.supabase.co'` and `keySource: 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'`. Never use a Supabase secret or `service_role` key for these variables.
+Authentication runs through the browser Supabase client, so password sign-in, account creation, and confirmation-code exchange do not depend on a Vercel Function reaching Supabase. The SSR proxy validates the resulting access token with `getClaims()` and stores refreshed cookies. If the UI reports `Failed to fetch`, inspect the browser Network panel: a request to an unexpected hostname means `NEXT_PUBLIC_SUPABASE_URL` is wrong, while DNS failures against the correct hostname usually mean the Supabase project is paused, deleted, or unavailable from the user's network.
+
+In Supabase **Authentication > URL Configuration**:
+
+- Set the production Vercel URL as the Site URL.
+- Add `https://your-vercel-domain.vercel.app/auth/callback` to Redirect URLs.
+- Add preview callback patterns separately if preview deployments need signup confirmation.
+
+Never use a Supabase secret or `service_role` key in a `NEXT_PUBLIC_*` variable.
+
+### Upgrading an existing v0.1 database
+
+Run the current [`supabase/schema.sql`](supabase/schema.sql) again after deploying this version. It replaces the original shared authenticated-user policies with per-account ownership policies. If the project contains exactly one Auth user, existing rows are assigned to that user automatically. If multiple Auth users already exist, assign any legacy rows with a null `owner_id` to the appropriate user in the SQL editor before they can be accessed.
 
 ## First working loop
 
