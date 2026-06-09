@@ -18,11 +18,22 @@ export async function logout() {
 
 export async function addTrend(formData: FormData) {
   const supabase = await requireClient();
+  const title = String(formData.get("title") || "").slice(0, 200);
+  const source = String(formData.get("source") || "").slice(0, 200);
+  const url = String(formData.get("url") || "").slice(0, 500) || null;
+  const summary = String(formData.get("summary") || "").slice(0, 2000);
+
+  if (!title || !source || !summary) {
+    redirect(
+      `/trends?error=${encodeURIComponent("Title, source, and summary are required.")}`,
+    );
+  }
+
   const { error } = await supabase.from("trends").insert({
-    title: String(formData.get("title") || ""),
-    source: String(formData.get("source") || ""),
-    url: String(formData.get("url") || "") || null,
-    summary: String(formData.get("summary") || ""),
+    title,
+    source,
+    url,
+    summary,
     status: "new",
   });
   if (error) redirect(`/trends?error=${encodeURIComponent(error.message)}`);
@@ -35,7 +46,24 @@ export async function generatePost(formData: FormData) {
   const trendId = String(formData.get("trend_id"));
   const title = String(formData.get("title"));
   const summary = String(formData.get("summary"));
-  const content = `${title}\n\n${summary}\n\nWhat are you noticing in your corner of the world?`;
+
+  // Load brand voice from settings (best-effort — never blocks post creation).
+  let brandVoice = "";
+  try {
+    const { data: settings } = await supabase
+      .from("settings")
+      .select("brand_voice")
+      .limit(1)
+      .maybeSingle();
+    brandVoice = settings?.brand_voice?.trim() ?? "";
+  } catch {
+    // Ignore — draft generation continues without brand voice.
+  }
+
+  const voiceNote = brandVoice ? `Voice guidance: ${brandVoice}\n\n` : "";
+
+  const content = `${voiceNote}${title}\n\n${summary}\n\nWhat are you noticing in your corner of the world?`;
+
   const { error } = await supabase.from("posts").insert({
     trend_id: trendId,
     platform: "facebook",

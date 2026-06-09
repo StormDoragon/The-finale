@@ -1,11 +1,16 @@
 import { Check, Facebook, Send, X } from "lucide-react";
+import Link from "next/link";
 import { updatePostStatus } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { Notice } from "@/components/notice";
 import { StatusPill } from "@/components/status-pill";
+import { SubmitButton } from "@/components/submit-button";
 import { demoPosts } from "@/lib/demo-data";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import type { Post } from "@/lib/types";
+
+const TABS = ["all", "draft", "approved", "published"] as const;
+type Tab = (typeof TABS)[number];
 
 function Action({
   id,
@@ -22,12 +27,13 @@ function Action({
     <form action={updatePostStatus}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="status" value={status} />
-      <button
+      <SubmitButton
+        pendingLabel="…"
         disabled={!hasSupabaseEnv}
         className={primary ? "btn-primary" : "btn-secondary"}
       >
         {children}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -35,9 +41,13 @@ function Action({
 export default async function QueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ message?: string; error?: string }>;
+  searchParams: Promise<{ message?: string; error?: string; tab?: string }>;
 }) {
   const params = await searchParams;
+  const activeTab: Tab = TABS.includes(params.tab as Tab)
+    ? (params.tab as Tab)
+    : "all";
+
   const supabase = await createClient();
   let posts: Post[] = demoPosts;
   if (supabase) {
@@ -47,25 +57,49 @@ export default async function QueuePage({
       .order("created_at", { ascending: false });
     posts = (result.data as Post[]) || [];
   }
-  const active = posts.filter((post) => post.status !== "rejected");
+
+  const nonRejected = posts.filter((p) => p.status !== "rejected");
+  const visible =
+    activeTab === "all"
+      ? nonRejected
+      : nonRejected.filter((p) => p.status === activeTab);
+
   return (
     <AppShell
       title="Post queue"
       description="Review every draft and decide when it is ready to publish."
     >
-      <Notice {...params} />
+      <Notice message={params.message} error={params.error} />
+
+      {/* Filter tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto">
-        {["All", "Draft", "Approved", "Published"].map((label, i) => (
-          <span
-            key={label}
-            className={`rounded-full px-3.5 py-2 text-xs font-semibold ${i === 0 ? "bg-slate-950 text-white" : "border bg-white text-slate-500"}`}
-          >
-            {label} {i === 0 && `· ${active.length}`}
-          </span>
-        ))}
+        {TABS.map((tab) => {
+          const count =
+            tab === "all"
+              ? nonRejected.length
+              : nonRejected.filter((p) => p.status === tab).length;
+          const isActive = tab === activeTab;
+          return (
+            <Link
+              key={tab}
+              href={`/queue?tab=${tab}`}
+              className={`rounded-full px-3.5 py-2 text-xs font-semibold capitalize transition ${
+                isActive
+                  ? "bg-slate-950 text-white"
+                  : "border bg-white text-slate-500 hover:border-slate-400"
+              }`}
+            >
+              {tab === "all"
+                ? "All"
+                : tab.charAt(0).toUpperCase() + tab.slice(1)}{" "}
+              · {count}
+            </Link>
+          );
+        })}
       </div>
+
       <div className="space-y-5">
-        {active.map((post) => (
+        {visible.map((post) => (
           <article key={post.id} className="card overflow-hidden">
             <div className="flex items-center justify-between border-b bg-slate-50/60 px-5 py-3">
               <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -110,11 +144,17 @@ export default async function QueuePage({
             </div>
           </article>
         ))}
-        {!active.length && (
+        {!visible.length && (
           <div className="card py-16 text-center">
-            <p className="font-medium">Your queue is clear.</p>
+            <p className="font-medium">
+              {activeTab === "all"
+                ? "Your queue is clear."
+                : `No ${activeTab} posts.`}
+            </p>
             <p className="mt-2 text-sm text-slate-500">
-              Generate a draft from one of your trends.
+              {activeTab === "all"
+                ? "Generate a draft from one of your trends."
+                : "Switch to a different tab to see other posts."}
             </p>
           </div>
         )}

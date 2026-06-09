@@ -3,6 +3,7 @@ import { addTrend, generatePost } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { Notice } from "@/components/notice";
 import { StatusPill } from "@/components/status-pill";
+import { SubmitButton } from "@/components/submit-button";
 import { demoTrends } from "@/lib/demo-data";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase/server";
 import type { Trend } from "@/lib/types";
@@ -81,9 +82,9 @@ export default async function TrendsPage({
                 required
               />
             </div>
-            <button className="btn-primary w-full" disabled={!hasSupabaseEnv}>
+            <SubmitButton pendingLabel="Saving…" disabled={!hasSupabaseEnv}>
               <Plus size={17} /> Save trend
-            </button>
+            </SubmitButton>
           </form>
         </section>
         <section className="space-y-4">
@@ -128,9 +129,12 @@ export default async function TrendsPage({
                   <input type="hidden" name="trend_id" value={trend.id} />
                   <input type="hidden" name="title" value={trend.title} />
                   <input type="hidden" name="summary" value={trend.summary} />
-                  <button className="btn-primary" disabled={!hasSupabaseEnv}>
+                  <SubmitButton
+                    pendingLabel="Generating…"
+                    disabled={!hasSupabaseEnv}
+                  >
                     <Sparkles size={15} /> Generate Facebook draft
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </article>

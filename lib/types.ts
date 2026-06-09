@@ -1,5 +1,6 @@
 export type Trend = {
   id: string;
+  owner_id?: string;
   title: string;
   source: string;
   url: string | null;
@@ -10,6 +11,7 @@ export type Trend = {
 
 export type Post = {
   id: string;
+  owner_id?: string;
   trend_id: string | null;
   platform: string;
   content: string;

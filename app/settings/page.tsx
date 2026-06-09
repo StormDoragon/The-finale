@@ -2,6 +2,7 @@ import { Facebook, Save, SlidersHorizontal } from "lucide-react";
 import { saveSettings } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { Notice } from "@/components/notice";
+import { SubmitButton } from "@/components/submit-button";
 import { createClient, hasSupabaseEnv } from "@/lib/supabase/server";
 
 export default async function SettingsPage({
@@ -72,9 +73,9 @@ export default async function SettingsPage({
             />
           </div>
         </section>
-        <button className="btn-primary" disabled={!hasSupabaseEnv}>
+        <SubmitButton pendingLabel="Saving…" disabled={!hasSupabaseEnv}>
           <Save size={16} /> Save settings
-        </button>
+        </SubmitButton>
       </form>
     </AppShell>
   );
