@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BarChart3, Compass, LogOut, Settings, Sparkles } from "lucide-react";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
+import { MobileNav } from "@/components/mobile-nav";
 import { hasSupabaseEnv } from "@/lib/supabase/server";
 
 const links = [
@@ -58,20 +59,12 @@ export function AppShell({
               <p className="mt-1 text-sm text-slate-500">{description}</p>
             </div>
             <div className="lg:hidden">
-              <Logo />
+              <div className="flex items-center gap-3">
+                <MobileNav />
+                <Logo />
+              </div>
             </div>
           </div>
-          <nav className="mx-auto mt-4 flex max-w-6xl gap-2 overflow-x-auto lg:hidden">
-            {links.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className="whitespace-nowrap rounded-full border bg-white px-3 py-1.5 text-xs"
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
         </header>
         <div className="mx-auto max-w-6xl p-5 md:p-10 lg:p-12">{children}</div>
       </main>
