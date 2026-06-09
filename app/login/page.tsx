@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { login, signUp } from "@/app/actions";
+import { CheckCircle2 } from "lucide-react";
+import { LoginForm } from "@/components/login-form";
 import { Logo } from "@/components/logo";
 import { Notice } from "@/components/notice";
-import { hasSupabaseEnv } from "@/lib/supabase/server";
+import {
+  hasSupabaseEnv,
+  supabaseConfigStatus,
+} from "@/lib/supabase/server";
 
 export default async function LoginPage({
   searchParams,
@@ -55,47 +58,16 @@ export default async function LoginPage({
             <Notice message={params.message} error={params.error} />
           </div>
           {!hasSupabaseEnv && (
-            <Notice message="Demo mode is active. Open the dashboard to preview the workspace, or connect Supabase to enable sign in." />
+            <Notice
+              error={supabaseConfigStatus.error}
+              message={
+                supabaseConfigStatus.error
+                  ? undefined
+                  : "Demo mode is active. Open the dashboard to preview the workspace, or connect Supabase to enable sign in."
+              }
+            />
           )}
-          <form action={login} className="mt-7 space-y-5">
-            <div>
-              <label className="label" htmlFor="email">
-                Email address
-              </label>
-              <input
-                className="field"
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">
-                Password
-              </label>
-              <input
-                className="field"
-                id="password"
-                name="password"
-                type="password"
-                placeholder="At least 6 characters"
-                minLength={6}
-                required
-              />
-            </div>
-            <button className="btn-primary w-full" type="submit">
-              Sign in <ArrowRight size={17} />
-            </button>
-            <button
-              className="btn-secondary w-full"
-              formAction={signUp}
-              type="submit"
-            >
-              Create an account
-            </button>
-          </form>
+          <LoginForm enabled={hasSupabaseEnv} />
           {!hasSupabaseEnv && (
             <Link
               className="mt-4 flex justify-center text-sm font-semibold text-slate-700 underline underline-offset-4"
