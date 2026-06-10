@@ -10,7 +10,7 @@ import { hasSupabaseEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import type { Post } from "@/lib/types";
 
-const TABS = ["all", "draft", "approved", "published"] as const;
+const TABS = ["all", "draft", "approved", "published", "rejected"] as const;
 type Tab = (typeof TABS)[number];
 
 function Action({
@@ -51,34 +51,38 @@ export default async function QueuePage({
 
   const supabase = await createClient();
   let posts: Post[] = demoPosts;
+  let loadError: string | undefined;
   if (supabase) {
     const result = await supabase
       .from("posts")
       .select("*, trends(title)")
       .order("created_at", { ascending: false });
-    posts = (result.data as Post[]) || [];
+    if (result.error) {
+      console.error("[data] Unable to load post queue", result.error);
+      loadError = "Your post queue could not be loaded. Please refresh and try again.";
+      posts = [];
+    } else {
+      posts = (result.data as Post[]) || [];
+    }
   }
 
-  const nonRejected = posts.filter((p) => p.status !== "rejected");
   const visible =
-    activeTab === "all"
-      ? nonRejected
-      : nonRejected.filter((p) => p.status === activeTab);
+    activeTab === "all" ? posts : posts.filter((p) => p.status === activeTab);
 
   return (
     <AppShell
       title="Post queue"
       description="Review every draft and decide when it is ready to publish."
     >
-      <Notice message={params.message} error={params.error} />
+      <Notice message={params.message} error={params.error || loadError} />
 
       {/* Filter tabs */}
       <div className="mb-6 flex gap-2 overflow-x-auto">
         {TABS.map((tab) => {
           const count =
             tab === "all"
-              ? nonRejected.length
-              : nonRejected.filter((p) => p.status === tab).length;
+              ? posts.length
+              : posts.filter((p) => p.status === tab).length;
           const isActive = tab === activeTab;
           return (
             <Link
@@ -117,6 +121,12 @@ export default async function QueuePage({
               <StatusPill status={post.status} />
             </div>
             <div className="p-5 md:p-7">
+              {post.editorial_note && (
+                <div className="mb-5 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+                  <span className="font-semibold">Voice guidance:</span>{" "}
+                  {post.editorial_note}
+                </div>
+              )}
               <p className="max-w-3xl whitespace-pre-line text-[15px] leading-7 text-slate-700">
                 {post.content}
               </p>

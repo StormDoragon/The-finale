@@ -7,8 +7,9 @@ A private, deliberately simple workflow for collecting trends, generating first-
 - Supabase email/password authentication
 - Dashboard counts for trends, drafts, approved posts, and published posts
 - Manual trend collection
-- Deterministic first-draft generation from a trend (no external AI service required)
-- Post queue with approve, reject, and mark-as-published actions
+- Deterministic first-draft generation from trusted, server-loaded trend data (no external AI service required)
+- A separate editorial voice note that guides review without leaking internal guidance into publishable copy
+- Post queue with enforced draft → approved → published transitions and a visible rejected archive
 - Facebook Page ID and brand voice settings
 - Read-only demo data when Supabase environment variables are absent
 
@@ -73,11 +74,25 @@ Never use a Supabase secret or `service_role` key in a `NEXT_PUBLIC_*` variable.
 
 Run the current [`supabase/schema.sql`](supabase/schema.sql) again after deploying this version. It replaces the original shared authenticated-user policies with per-account ownership policies. If the project contains exactly one Auth user, existing rows are assigned to that user automatically. If multiple Auth users already exist, assign any legacy rows with a null `owner_id` to the appropriate user in the SQL editor before they can be accessed.
 
+## Product direction
+
+Liberation OS is intentionally a **human-in-the-loop editorial workspace**, not an autonomous publisher. The application should make the small repeatable loop—capture, draft, review, publish—dependable before adding external generation or Facebook API automation. Server actions therefore treat browser form values as untrusted, the database enforces the core workflow invariants, and internal voice guidance stays visibly separate from copy that may be published.
+
+## Quality checks
+
+Run the complete local verification suite with:
+
+```bash
+npm run check
+```
+
+This runs ESLint, strict TypeScript checking, focused workflow-validation tests, and a production Next.js build.
+
 ## First working loop
 
 1. Add a trend on **Trends**.
-2. Select **Generate Facebook draft**. v0.1 creates a transparent, deterministic draft from the trend title and summary.
-3. Review it in **Post queue**.
+2. Select **Generate Facebook draft**. v0.1 creates one transparent, deterministic draft from the saved trend title and summary.
+3. Review it in **Post queue**. Brand voice guidance appears as an internal editorial note and is not included in the publishable post text.
 4. Approve or reject the draft manually.
 5. Select **Mark as published** after posting it to Facebook yourself.
 

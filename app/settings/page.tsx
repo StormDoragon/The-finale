@@ -17,12 +17,16 @@ export default async function SettingsPage({
     ? await supabase.from("settings").select("*").limit(1).maybeSingle()
     : null;
   const settings = result?.data;
+  if (result?.error) console.error("[data] Unable to load settings", result.error);
+  const loadError = result?.error
+    ? "Your settings could not be loaded. Please refresh and try again."
+    : undefined;
   return (
     <AppShell
       title="Settings"
       description="Keep the essentials for your Facebook publishing workflow."
     >
-      <Notice {...params} />
+      <Notice message={params.message} error={params.error || loadError} />
       <form action={saveSettings} className="max-w-2xl space-y-6">
         <section className="card p-6">
           <div className="flex items-center gap-3 border-b pb-5">
@@ -37,10 +41,14 @@ export default async function SettingsPage({
             </div>
           </div>
           <div className="mt-5">
-            <label className="label">Facebook Page ID</label>
+            <label className="label" htmlFor="facebook_page_id">
+              Facebook Page ID
+            </label>
             <input
               className="field"
+              id="facebook_page_id"
               name="facebook_page_id"
+              maxLength={100}
               defaultValue={settings?.facebook_page_id || ""}
               placeholder="123456789012345"
             />
@@ -62,10 +70,14 @@ export default async function SettingsPage({
             </div>
           </div>
           <div className="mt-5">
-            <label className="label">Voice guidance</label>
+            <label className="label" htmlFor="brand_voice">
+              Voice guidance
+            </label>
             <textarea
               className="field min-h-36 resize-y"
+              id="brand_voice"
               name="brand_voice"
+              maxLength={2000}
               defaultValue={
                 settings?.brand_voice ||
                 "Clear, practical, optimistic, and conversational. Avoid hype and jargon."

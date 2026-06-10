@@ -17,19 +17,26 @@ export default async function TrendsPage({
   const params = await searchParams;
   const supabase = await createClient();
   let trends: Trend[] = demoTrends;
+  let loadError: string | undefined;
   if (supabase) {
     const result = await supabase
       .from("trends")
       .select("*")
       .order("created_at", { ascending: false });
-    trends = result.data || [];
+    if (result.error) {
+      console.error("[data] Unable to load trends", result.error);
+      loadError = "Your trends could not be loaded. Please refresh and try again.";
+      trends = [];
+    } else {
+      trends = result.data || [];
+    }
   }
   return (
     <AppShell
       title="Trends"
       description="Capture useful signals, then turn them into a Facebook draft."
     >
-      <Notice {...params} />
+      <Notice message={params.message} error={params.error || loadError} />
       <div className="grid gap-6 xl:grid-cols-[.7fr_1.3fr]">
         <section className="card h-fit p-6">
           <div className="flex items-center gap-3">
@@ -45,40 +52,48 @@ export default async function TrendsPage({
           </div>
           <form action={addTrend} className="mt-6 space-y-4">
             <div>
-              <label className="label">Trend title</label>
+              <label className="label" htmlFor="title">Trend title</label>
               <input
                 className="field"
+                id="title"
                 name="title"
+                maxLength={200}
                 placeholder="What are people talking about?"
                 required
               />
             </div>
             <div>
-              <label className="label">Source</label>
+              <label className="label" htmlFor="source">Source</label>
               <input
                 className="field"
+                id="source"
                 name="source"
+                maxLength={200}
                 placeholder="Newsletter, report, conversation…"
                 required
               />
             </div>
             <div>
-              <label className="label">
+              <label className="label" htmlFor="url">
                 Source URL{" "}
                 <span className="font-normal text-slate-400">(optional)</span>
               </label>
               <input
                 className="field"
+                id="url"
                 name="url"
+                maxLength={500}
                 type="url"
                 placeholder="https://"
               />
             </div>
             <div>
-              <label className="label">Your quick summary</label>
+              <label className="label" htmlFor="summary">Your quick summary</label>
               <textarea
                 className="field min-h-28 resize-y"
+                id="summary"
                 name="summary"
+                maxLength={2000}
                 placeholder="Why does this matter to your audience?"
                 required
               />
@@ -128,13 +143,15 @@ export default async function TrendsPage({
                 )}
                 <form action={generatePost}>
                   <input type="hidden" name="trend_id" value={trend.id} />
-                  <input type="hidden" name="title" value={trend.title} />
-                  <input type="hidden" name="summary" value={trend.summary} />
                   <SubmitButton
                     pendingLabel="Generating…"
-                    disabled={!hasSupabaseEnv}
+                    disabled={!hasSupabaseEnv || trend.status !== "new"}
                   >
-                    <Sparkles size={15} /> Generate Facebook draft
+                    <Sparkles size={15} />{
+                      trend.status === "new"
+                        ? "Generate Facebook draft"
+                        : "Draft generated"
+                    }
                   </SubmitButton>
                 </form>
               </div>
