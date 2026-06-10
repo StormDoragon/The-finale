@@ -1,19 +1,18 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
+import { LoginNotices } from "@/components/login-notices";
 import { Logo } from "@/components/logo";
 import { Notice } from "@/components/notice";
 import {
   hasSupabaseEnv,
   supabaseConfigStatus,
-} from "@/lib/supabase/server";
+} from "@/lib/supabase/config";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ message?: string; error?: string }>;
-}) {
-  const params = await searchParams;
+export const dynamic = "force-static";
+
+export default function LoginPage() {
   return (
     <main className="grid min-h-screen bg-[#f6f6f3] lg:grid-cols-2">
       <section className="hidden bg-slate-950 p-14 text-white lg:flex lg:flex-col">
@@ -55,7 +54,9 @@ export default async function LoginPage({
             Keep your trend-to-post workflow in one quiet place.
           </p>
           <div className="mt-7">
-            <Notice message={params.message} error={params.error} />
+            <Suspense fallback={null}>
+              <LoginNotices />
+            </Suspense>
           </div>
           {!hasSupabaseEnv && (
             <Notice

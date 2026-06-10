@@ -5,7 +5,8 @@ import { Notice } from "@/components/notice";
 import { StatusPill } from "@/components/status-pill";
 import { SubmitButton } from "@/components/submit-button";
 import { demoTrends } from "@/lib/demo-data";
-import { createClient, hasSupabaseEnv } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/config";
+import { createClient } from "@/lib/supabase/server";
 import type { Trend } from "@/lib/types";
 
 export default async function TrendsPage({

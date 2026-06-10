@@ -3,7 +3,7 @@ import { BarChart3, Compass, LogOut, Settings, Sparkles } from "lucide-react";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { MobileNav } from "@/components/mobile-nav";
-import { hasSupabaseEnv } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/config";
 
 const links = [
   { href: "/dashboard", label: "Overview", icon: BarChart3 },
