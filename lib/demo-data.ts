@@ -39,6 +39,8 @@ export const demoPosts: Post[] = [
     id: "post-1",
     trend_id: "demo-2",
     platform: "facebook",
+    editorial_note:
+      "Clear, practical, optimistic, and conversational. Avoid hype and jargon.",
     content:
       "The content people remember is rarely the most polished. It is the moment you show the work, the lesson, or the decision behind the result. What part of your process could you share this week?",
     status: "draft",

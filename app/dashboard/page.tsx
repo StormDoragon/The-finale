@@ -7,6 +7,7 @@ import {
   Send,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { Notice } from "@/components/notice";
 import { StatusPill } from "@/components/status-pill";
 import { demoPosts, demoTrends } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   let trends: Trend[] = demoTrends;
   let posts: Post[] = demoPosts;
+  let loadError: string | undefined;
   if (supabase) {
     const [trendResult, postResult] = await Promise.all([
       supabase
@@ -27,6 +29,13 @@ export default async function DashboardPage() {
         .select("*, trends(title)")
         .order("created_at", { ascending: false }),
     ]);
+    if (trendResult.error || postResult.error) {
+      console.error("[data] Unable to load dashboard", {
+        trends: trendResult.error,
+        posts: postResult.error,
+      });
+      loadError = "Your workspace summary could not be fully loaded. Please refresh and try again.";
+    }
     trends = trendResult.data || [];
     posts = (postResult.data as Post[]) || [];
   }
@@ -61,6 +70,7 @@ export default async function DashboardPage() {
       title="Overview"
       description="A simple view of what is moving through your content workflow."
     >
+      <Notice error={loadError} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, tone }) => (
           <div key={label} className="card p-5">

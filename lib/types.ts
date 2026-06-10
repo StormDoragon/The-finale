@@ -1,3 +1,6 @@
+export type TrendStatus = "new" | "used";
+export type PostStatus = "draft" | "approved" | "published" | "rejected";
+
 export type Trend = {
   id: string;
   owner_id?: string;
@@ -5,7 +8,7 @@ export type Trend = {
   source: string;
   url: string | null;
   summary: string;
-  status: string;
+  status: TrendStatus;
   created_at: string;
 };
 
@@ -15,7 +18,8 @@ export type Post = {
   trend_id: string | null;
   platform: string;
   content: string;
-  status: "draft" | "approved" | "published" | "rejected";
+  editorial_note?: string | null;
+  status: PostStatus;
   created_at: string;
   approved_at: string | null;
   published_at: string | null;
