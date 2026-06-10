@@ -96,6 +96,9 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
   }
 }
 
+export const supabaseConfigStatus = getSupabaseConfigStatus();
+export const hasSupabaseEnv = supabaseConfigStatus.configured;
+
 export function describeError(error: unknown) {
   if (!(error instanceof Error)) {
     return { message: String(error) };

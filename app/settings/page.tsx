@@ -3,7 +3,8 @@ import { saveSettings } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { Notice } from "@/components/notice";
 import { SubmitButton } from "@/components/submit-button";
-import { createClient, hasSupabaseEnv } from "@/lib/supabase/server";
+import { hasSupabaseEnv } from "@/lib/supabase/config";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function SettingsPage({
   searchParams,

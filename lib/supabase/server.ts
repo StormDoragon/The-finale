@@ -1,13 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import {
-  describeError,
-  getSupabaseConfig,
-  getSupabaseConfigStatus,
-} from "@/lib/supabase/config";
-
-export const supabaseConfigStatus = getSupabaseConfigStatus();
-export const hasSupabaseEnv = supabaseConfigStatus.configured;
+import { describeError, getSupabaseConfig } from "@/lib/supabase/config";
 
 export async function createClient() {
   let config: ReturnType<typeof getSupabaseConfig>;
