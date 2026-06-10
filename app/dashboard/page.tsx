@@ -13,6 +13,8 @@ import { demoPosts, demoTrends } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Post, Trend } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   let trends: Trend[] = demoTrends;
