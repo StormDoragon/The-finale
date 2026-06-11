@@ -23,7 +23,10 @@ function connectionMessage(error: unknown) {
     : "Authentication failed. Please try again.";
 }
 
-export function LoginForm({ enabled }: { enabled: boolean }) {
+export type LoginConfig = { url: string; key: string };
+
+export function LoginForm({ config }: { config: LoginConfig | null }) {
+  const enabled = config !== null;
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode | null>(null);
   const [error, setError] = useState<string>();
@@ -38,10 +41,15 @@ export function LoginForm({ enabled }: { enabled: boolean }) {
     setMessage(undefined);
 
     try {
+      if (!config) {
+        throw new Error(
+          "Supabase is not configured. Add the public project URL and publishable key, then redeploy.",
+        );
+      }
       const formData = new FormData(form);
       const email = String(formData.get("email") || "").trim();
       const password = String(formData.get("password") || "");
-      const supabase = createClient();
+      const supabase = createClient(config.url, config.key);
 
       if (authMode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({

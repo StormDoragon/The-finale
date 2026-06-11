@@ -6,13 +6,18 @@ import { LoginNotices } from "@/components/login-notices";
 import { Logo } from "@/components/logo";
 import { Notice } from "@/components/notice";
 import {
-  hasSupabaseEnv,
-  supabaseConfigStatus,
+  getSupabaseConfig,
+  getSupabaseConfigStatus,
 } from "@/lib/supabase/config";
 
-export const dynamic = "force-static";
+// Render per request so the page reflects the server's runtime Supabase
+// configuration — a static build could disagree with the middleware and
+// lock users out on a disabled form.
+export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
+  const status = getSupabaseConfigStatus();
+  const config = status.configured ? getSupabaseConfig() : null;
   return (
     <main className="grid min-h-screen bg-[#f6f6f3] lg:grid-cols-2">
       <section className="hidden bg-slate-950 p-14 text-white lg:flex lg:flex-col">
@@ -58,18 +63,20 @@ export default function LoginPage() {
               <LoginNotices />
             </Suspense>
           </div>
-          {!hasSupabaseEnv && (
+          {!status.configured && (
             <Notice
-              error={supabaseConfigStatus.error}
+              error={status.error}
               message={
-                supabaseConfigStatus.error
+                status.error
                   ? undefined
                   : "Demo mode is active. Open the dashboard to preview the workspace, or connect Supabase to enable sign in."
               }
             />
           )}
-          <LoginForm enabled={hasSupabaseEnv} />
-          {!hasSupabaseEnv && (
+          <LoginForm
+            config={config ? { url: config.url, key: config.key } : null}
+          />
+          {!status.configured && (
             <Link
               className="mt-4 flex justify-center text-sm font-semibold text-slate-700 underline underline-offset-4"
               href="/dashboard"
