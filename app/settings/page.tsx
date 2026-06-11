@@ -5,6 +5,10 @@ import { Notice } from "@/components/notice";
 import { SubmitButton } from "@/components/submit-button";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import {
+  resolveWritingStyle,
+  WRITING_STYLE_OPTIONS,
+} from "@/lib/writing-styles";
 
 export default async function SettingsPage({
   searchParams,
@@ -17,6 +21,7 @@ export default async function SettingsPage({
     ? await supabase.from("settings").select("*").limit(1).maybeSingle()
     : null;
   const settings = result?.data;
+  const selectedWritingStyle = resolveWritingStyle(settings?.writing_style);
   if (result?.error) console.error("[data] Unable to load settings", result.error);
   const loadError = result?.error
     ? "Your settings could not be loaded. Please refresh and try again."
@@ -63,13 +68,42 @@ export default async function SettingsPage({
               <SlidersHorizontal size={19} />
             </span>
             <div>
-              <h2 className="font-semibold">Brand voice</h2>
+              <h2 className="font-semibold">Writing style &amp; brand voice</h2>
               <p className="mt-1 text-xs text-slate-500">
-                A short note to guide your drafts.
+                Choose a structure and add guidance for your drafts.
               </p>
             </div>
           </div>
-          <div className="mt-5">
+          <fieldset className="mt-5">
+            <legend className="label">Writing style</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {WRITING_STYLE_OPTIONS.map((option) => (
+                <label
+                  className="has-checked:border-slate-900 has-checked:bg-slate-50 cursor-pointer rounded-xl border border-slate-200 p-4 transition hover:border-slate-400"
+                  key={option.value}
+                >
+                  <span className="flex items-start gap-3">
+                    <input
+                      className="mt-0.5 size-4 accent-slate-900"
+                      type="radio"
+                      name="writing_style"
+                      value={option.value}
+                      defaultChecked={selectedWritingStyle === option.value}
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-900">
+                        {option.label}
+                      </span>
+                      <span className="mt-1 block text-xs leading-5 text-slate-500">
+                        {option.description}
+                      </span>
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="mt-6 border-t pt-5">
             <label className="label" htmlFor="brand_voice">
               Voice guidance
             </label>

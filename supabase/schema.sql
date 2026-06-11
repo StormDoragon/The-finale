@@ -30,6 +30,7 @@ create table if not exists public.settings (
   owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   facebook_page_id text,
   brand_voice text,
+  writing_style text default 'educational',
   created_at timestamptz not null default now()
 );
 
@@ -40,6 +41,8 @@ alter table public.posts
   add column if not exists owner_id uuid default auth.uid() references auth.users(id) on delete cascade;
 alter table public.settings
   add column if not exists owner_id uuid default auth.uid() references auth.users(id) on delete cascade;
+alter table public.settings
+  add column if not exists writing_style text default 'educational';
 alter table public.posts
   add column if not exists editorial_note text;
 
