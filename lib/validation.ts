@@ -1,4 +1,5 @@
 import type { PostStatus } from "./types";
+import { isWritingStyle, type WritingStyle } from "./writing-styles.ts";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -28,6 +29,13 @@ export function optionalText(
     throw new ValidationError(`${label} must be ${maxLength} characters or less.`);
   }
   return text || null;
+}
+
+export function writingStyle(value: FormDataEntryValue | null): WritingStyle {
+  if (!isWritingStyle(value)) {
+    throw new ValidationError("Choose a valid writing style.");
+  }
+  return value;
 }
 
 export function optionalHttpUrl(value: FormDataEntryValue | null) {

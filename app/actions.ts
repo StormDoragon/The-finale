@@ -7,6 +7,7 @@ import {
   regenerateFacebookDraft,
 } from "@/lib/draft-templates";
 import { createClient } from "@/lib/supabase/server";
+import { resolveWritingStyle } from "@/lib/writing-styles";
 import {
   optionalHttpUrl,
   optionalText,
@@ -14,6 +15,7 @@ import {
   requiredText,
   uuid,
   ValidationError,
+  writingStyle,
 } from "@/lib/validation";
 
 function redirectWithError(path: string, message: string): never {
@@ -128,14 +130,15 @@ export async function generateDraft(trendId: string): Promise<string> {
 
   const { data: settings, error: settingsError } = await supabase
     .from("settings")
-    .select("brand_voice")
+    .select("brand_voice, writing_style")
     .limit(1)
     .maybeSingle();
   if (settingsError) {
-    console.warn("[data] Draft generated without brand voice", settingsError);
+    console.warn("[data] Draft generated with default settings", settingsError);
   }
   const brandVoice = settings?.brand_voice?.trim() ?? "";
-  const content = generateFacebookDraft(trend);
+  const selectedWritingStyle = resolveWritingStyle(settings?.writing_style);
+  const content = generateFacebookDraft(trend, selectedWritingStyle);
 
   const { data: post, error: postError } = await supabase
     .from("posts")
@@ -240,7 +243,21 @@ export async function regeneratePost(postId: string): Promise<string> {
     redirectWithError("/queue", "That draft's trend could not be found.");
   }
 
-  const content = regenerateFacebookDraft(trend, post.content);
+  const { data: settings, error: settingsError } = await supabase
+    .from("settings")
+    .select("writing_style")
+    .limit(1)
+    .maybeSingle();
+  if (settingsError) {
+    console.warn("[data] Draft regenerated with the default writing style", settingsError);
+  }
+
+  const selectedWritingStyle = resolveWritingStyle(settings?.writing_style);
+  const content = regenerateFacebookDraft(
+    trend,
+    post.content,
+    selectedWritingStyle,
+  );
   const { data: updatedPost, error: updateError } = await supabase
     .from("posts")
     .update({ content })
@@ -300,6 +317,7 @@ export async function saveSettings(formData: FormData) {
   const { supabase, user } = await requireUser();
   let facebookPageId: string | null;
   let brandVoice: string | null;
+  let selectedWritingStyle: ReturnType<typeof writingStyle>;
   try {
     facebookPageId = optionalText(
       formData.get("facebook_page_id"),
@@ -307,6 +325,7 @@ export async function saveSettings(formData: FormData) {
       100,
     );
     brandVoice = optionalText(formData.get("brand_voice"), "Brand voice", 2000);
+    selectedWritingStyle = writingStyle(formData.get("writing_style"));
   } catch (error) {
     validationFailure(error, "/settings");
   }
@@ -316,6 +335,7 @@ export async function saveSettings(formData: FormData) {
       owner_id: user.id,
       facebook_page_id: facebookPageId,
       brand_voice: brandVoice,
+      writing_style: selectedWritingStyle,
     },
     { onConflict: "owner_id" },
   );
