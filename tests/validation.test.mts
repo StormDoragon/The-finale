@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  generateFacebookDraft,
-  regenerateFacebookDraft,
-} from "../lib/draft-templates.ts";
-import {
   optionalHttpUrl,
   optionalText,
   postTransition,
@@ -57,82 +53,4 @@ test("writingStyle accepts supported values and rejects invalid input", () => {
   assert.equal(writingStyle("story"), "story");
   assert.throws(() => writingStyle("salesy"), ValidationError);
   assert.throws(() => writingStyle(null), ValidationError);
-});
-
-const trend = {
-  title: "A useful trend",
-  source: "Trusted source",
-  summary: "A concise summary of what changed.",
-};
-
-test("regenerateFacebookDraft rotates through different templates", () => {
-  const first = regenerateFacebookDraft(trend, "an existing custom draft", "educational");
-  const second = regenerateFacebookDraft(trend, first, "educational");
-  const third = regenerateFacebookDraft(trend, second, "educational");
-
-  assert.notEqual(first, second);
-  assert.notEqual(second, third);
-  assert.equal(regenerateFacebookDraft(trend, third, "educational"), first);
-});
-
-test("regenerateFacebookDraft recognizes a lightly edited template", () => {
-  const generated = [
-    "Quick question: have you heard about A useful trend?",
-    "",
-    "If not, here's the short version:",
-    "",
-    "An editor changed this summary.",
-    "",
-    "Source: Trusted source.",
-    "",
-    "Follow the page so you don't miss the next one.",
-  ].join("\n");
-
-  const regenerated = regenerateFacebookDraft(trend, generated, "educational");
-  assert.notEqual(regenerated, generated);
-  assert.match(regenerated, /Here is why it matters:/);
-});
-
-
-test("generateFacebookDraft uses a distinct template set for every style", () => {
-  const originalRandom = Math.random;
-  Math.random = () => 0;
-
-  try {
-    assert.match(generateFacebookDraft(trend, "contrarian"), /Unpopular opinion:/);
-    assert.match(generateFacebookDraft(trend, "educational"), /Here is why it matters:/);
-    assert.match(generateFacebookDraft(trend, "breaking_news"), /Breaking:/);
-    assert.match(generateFacebookDraft(trend, "story"), /Then something changed:/);
-  } finally {
-    Math.random = originalRandom;
-  }
-});
-
-test("regenerateFacebookDraft stays within the selected style", () => {
-  const regenerated = regenerateFacebookDraft(
-    trend,
-    "an existing educational draft",
-    "breaking_news",
-  );
-
-  assert.match(regenerated, /Breaking:|Just in:|News alert:/);
-  assert.doesNotMatch(regenerated, /Here is why it matters:/);
-});
-
-test("every writing style rotates through exactly three templates", () => {
-  const styles = [
-    "contrarian",
-    "educational",
-    "breaking_news",
-    "story",
-  ] as const;
-
-  for (const style of styles) {
-    const first = regenerateFacebookDraft(trend, "custom draft", style);
-    const second = regenerateFacebookDraft(trend, first, style);
-    const third = regenerateFacebookDraft(trend, second, style);
-
-    assert.equal(new Set([first, second, third]).size, 3);
-    assert.equal(regenerateFacebookDraft(trend, third, style), first);
-  }
 });

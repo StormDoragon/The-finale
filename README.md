@@ -7,7 +7,8 @@ A private, deliberately simple workflow for collecting trends, generating first-
 - Supabase email/password authentication
 - Dashboard counts for trends, drafts, approved posts, and published posts
 - Manual trend collection
-- Deterministic first-draft generation from trusted, server-loaded trend data (no external AI service required)
+- A zero-cost local copywriting engine (no external AI service required): it analyzes each trend for its most striking statistic and strongest fact, cleans up messy titles, formats the summary into scannable Facebook-style paragraphs, renders multiple candidate posts per writing style, scores them on hook strength, and always serves the best one first
+- One-click regeneration that walks down the ranked list of alternative drafts, even after light manual edits
 - A separate editorial voice note that guides review without leaking internal guidance into publishable copy
 - Post queue with enforced draft → approved → published transitions and a visible rejected archive
 - Facebook Page ID and brand voice settings
@@ -90,10 +91,17 @@ This runs ESLint, strict TypeScript checking, focused workflow-validation tests,
 
 ## First working loop
 
-1. Add a trend on **Trends**.
-2. Select **Generate Facebook draft**. v0.1 creates one transparent, deterministic draft from the saved trend title and summary.
-3. Review it in **Post queue**. Brand voice guidance appears as an internal editorial note and is not included in the publishable post text.
+1. Add a trend on **Trends**. The richer the summary (concrete numbers, short factual sentences), the stronger the generated hook.
+2. Select **Generate Facebook draft**. The copy engine analyzes the trend, builds every candidate post for your selected writing style, scores them, and saves the strongest one.
+3. Review it in **Post queue**. Brand voice guidance appears as an internal editorial note and is not included in the publishable post text. Use **Regenerate** to step through the next-best ranked drafts.
 4. Approve or reject the draft manually.
 5. Select **Mark as published** after posting it to Facebook yourself.
 
-Actual Facebook API publishing and AI model generation are intentionally outside the v0.1 scope.
+### How the copy engine chooses a draft
+
+- The title is normalized first: shouting ALL-CAPS is tamed (common acronyms like AI or NASA are preserved), prefixes such as `BREAKING:` are stripped, and stray punctuation is removed.
+- The summary is split into sentences. A sentence that merely repeats the title is dropped, and the rest are grouped into short paragraphs that read well in the Facebook feed.
+- The engine looks for the most striking figure (percentages, money, magnitudes like "2 million", multipliers like "3x") and the most concrete sentence. Templates that lead with a statistic only activate when the trend actually contains one.
+- Every candidate is scored on hook length (the first ~120 characters are what the mobile feed shows), concreteness, curiosity, and overall word count. The same trend always produces the same best draft, so generation stays transparent and reviewable.
+
+Actual Facebook API publishing and paid model generation are intentionally outside the v0.1 scope.
