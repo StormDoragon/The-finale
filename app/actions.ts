@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { generateFacebookDraft } from "@/lib/draft-templates";
 import { createClient } from "@/lib/supabase/server";
 import {
   optionalHttpUrl,
@@ -83,7 +84,6 @@ export async function addTrend(formData: FormData) {
 }
 
 export async function generatePost(formData: FormData) {
-  const { supabase } = await requireUser();
   let trendId: string;
   try {
     trendId = uuid(formData.get("trend_id"), "trend");
@@ -91,9 +91,16 @@ export async function generatePost(formData: FormData) {
     validationFailure(error, "/trends");
   }
 
+  await generateDraft(trendId);
+  redirect("/queue?message=Draft+added+to+your+queue");
+}
+
+export async function generateDraft(trendId: string): Promise<string> {
+  const { supabase } = await requireUser();
+
   const { data: trend, error: trendError } = await supabase
     .from("trends")
-    .select("id, title, summary, status")
+    .select("id, title, source, summary, status")
     .eq("id", trendId)
     .maybeSingle();
   if (trendError) databaseFailure("Unable to load trend", trendError, "/trends");
@@ -125,16 +132,26 @@ export async function generatePost(formData: FormData) {
     console.warn("[data] Draft generated without brand voice", settingsError);
   }
   const brandVoice = settings?.brand_voice?.trim() ?? "";
-  const content = `${trend.title}\n\n${trend.summary}\n\nWhat are you noticing in your corner of the world?`;
+  const content = generateFacebookDraft(trend);
 
-  const { error: postError } = await supabase.from("posts").insert({
-    trend_id: trendId,
-    platform: "facebook",
-    content,
-    editorial_note: brandVoice || null,
-    status: "draft",
-  });
-  if (postError) databaseFailure("Unable to create draft", postError, "/trends");
+  const { data: post, error: postError } = await supabase
+    .from("posts")
+    .insert({
+      trend_id: trendId,
+      platform: "facebook",
+      content,
+      editorial_note: brandVoice || null,
+      status: "draft",
+    })
+    .select("id")
+    .single();
+  if (postError || !post) {
+    databaseFailure(
+      "Unable to create draft",
+      postError ?? { message: "Insert returned no row" },
+      "/trends",
+    );
+  }
 
   const { error: updateError } = await supabase
     .from("trends")
@@ -147,7 +164,7 @@ export async function generatePost(formData: FormData) {
   revalidatePath("/trends");
   revalidatePath("/queue");
   revalidatePath("/dashboard");
-  redirect("/queue?message=Draft+added+to+your+queue");
+  return post.id;
 }
 
 export async function updatePostStatus(formData: FormData) {
