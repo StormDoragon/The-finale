@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { generateFacebookDraft } from "@/lib/draft-templates";
+import {
+  generateFacebookDraft,
+  regenerateFacebookDraft,
+} from "@/lib/draft-templates";
 import { createClient } from "@/lib/supabase/server";
 import {
   optionalHttpUrl,
@@ -165,6 +168,98 @@ export async function generateDraft(trendId: string): Promise<string> {
   revalidatePath("/queue");
   revalidatePath("/dashboard");
   return post.id;
+}
+
+export async function updatePostContent(
+  postId: string,
+  contentValue: string,
+): Promise<string> {
+  const { supabase } = await requireUser();
+  let id: string;
+  let content: string;
+  try {
+    id = uuid(postId, "post");
+    content = requiredText(contentValue, "Post content", 5000);
+  } catch (error) {
+    validationFailure(error, "/queue");
+  }
+
+  const { data, error } = await supabase
+    .from("posts")
+    .update({ content })
+    .eq("id", id)
+    .eq("status", "draft")
+    .select("content")
+    .maybeSingle();
+  if (error) databaseFailure("Unable to update draft content", error, "/queue");
+  if (!data) {
+    redirectWithError(
+      "/queue",
+      "Only draft posts can be edited. Refresh and try again.",
+    );
+  }
+
+  revalidatePath("/queue");
+  return data.content;
+}
+
+export async function regeneratePost(postId: string): Promise<string> {
+  const { supabase } = await requireUser();
+  let id: string;
+  try {
+    id = uuid(postId, "post");
+  } catch (error) {
+    validationFailure(error, "/queue");
+  }
+
+  const { data: post, error: postError } = await supabase
+    .from("posts")
+    .select("id, trend_id, content, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (postError) databaseFailure("Unable to load draft", postError, "/queue");
+  if (!post || post.status !== "draft") {
+    redirectWithError(
+      "/queue",
+      "Only draft posts can be regenerated. Refresh and try again.",
+    );
+  }
+  if (!post.trend_id) {
+    redirectWithError("/queue", "This draft is not linked to a trend.");
+  }
+
+  const { data: trend, error: trendError } = await supabase
+    .from("trends")
+    .select("title, source, summary")
+    .eq("id", post.trend_id)
+    .maybeSingle();
+  if (trendError) {
+    databaseFailure("Unable to load draft trend", trendError, "/queue");
+  }
+  if (!trend) {
+    redirectWithError("/queue", "That draft's trend could not be found.");
+  }
+
+  const content = regenerateFacebookDraft(trend, post.content);
+  const { data: updatedPost, error: updateError } = await supabase
+    .from("posts")
+    .update({ content })
+    .eq("id", id)
+    .eq("status", "draft")
+    .select("content")
+    .maybeSingle();
+  if (updateError) {
+    databaseFailure("Unable to regenerate draft", updateError, "/queue");
+  }
+  if (!updatedPost) {
+    redirectWithError(
+      "/queue",
+      "That post changed before your request. Refresh and try again.",
+    );
+  }
+
+  revalidatePath("/queue");
+  return updatedPost.content;
 }
 
 export async function updatePostStatus(formData: FormData) {

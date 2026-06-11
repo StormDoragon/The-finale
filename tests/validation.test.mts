@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { regenerateFacebookDraft } from "../lib/draft-templates.ts";
 import {
   optionalHttpUrl,
   optionalText,
@@ -42,4 +43,39 @@ test("postTransition enforces the editorial state machine", () => {
   });
   assert.throws(() => postTransition("draft"), ValidationError);
   assert.throws(() => postTransition("deleted"), ValidationError);
+});
+
+
+const trend = {
+  title: "A useful trend",
+  source: "Trusted source",
+  summary: "A concise summary of what changed.",
+};
+
+test("regenerateFacebookDraft rotates through different templates", () => {
+  const first = regenerateFacebookDraft(trend, "an existing custom draft");
+  const second = regenerateFacebookDraft(trend, first);
+  const third = regenerateFacebookDraft(trend, second);
+
+  assert.notEqual(first, second);
+  assert.notEqual(second, third);
+  assert.equal(regenerateFacebookDraft(trend, third), first);
+});
+
+test("regenerateFacebookDraft recognizes a lightly edited template", () => {
+  const generated = [
+    "Quick question: have you heard about A useful trend?",
+    "",
+    "If not, here's the short version:",
+    "",
+    "An editor changed this summary.",
+    "",
+    "Source: Trusted source.",
+    "",
+    "Follow the page so you don't miss the next one.",
+  ].join("\n");
+
+  const regenerated = regenerateFacebookDraft(trend, generated);
+  assert.notEqual(regenerated, generated);
+  assert.match(regenerated, /Here is why it matters:/);
 });
