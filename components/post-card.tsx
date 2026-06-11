@@ -170,9 +170,15 @@ export function PostCard({
             </p>
           </div>
         ) : (
-          <p className="max-w-3xl whitespace-pre-line text-[15px] leading-7 text-slate-700">
-            {content}
-          </p>
+          <>
+            <p className="max-w-3xl whitespace-pre-line text-[15px] leading-7 text-slate-700">
+              {content}
+            </p>
+            <p className="mt-3 text-xs text-slate-400">
+              {content.trim().split(/\s+/).length} words · {content.length}{" "}
+              characters
+            </p>
+          </>
         )}
 
         {actionError && (

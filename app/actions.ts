@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import {
   generateFacebookDraft,
   regenerateFacebookDraft,
-} from "@/lib/draft-templates";
+} from "@/lib/copy-engine";
 import { createClient } from "@/lib/supabase/server";
 import { resolveWritingStyle } from "@/lib/writing-styles";
 import {
