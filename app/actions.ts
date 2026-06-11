@@ -2,12 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import Anthropic from "@anthropic-ai/sdk";
-import {
-  generateFacebookDraft,
-  hasAnthropicEnv,
-  templateFacebookDraft,
-} from "@/lib/ai";
+import { generateFacebookDraft } from "@/lib/draft-templates";
 import { createClient } from "@/lib/supabase/server";
 import {
   optionalHttpUrl,
@@ -137,25 +132,7 @@ export async function generateDraft(trendId: string): Promise<string> {
     console.warn("[data] Draft generated without brand voice", settingsError);
   }
   const brandVoice = settings?.brand_voice?.trim() ?? "";
-
-  let content: string;
-  if (hasAnthropicEnv()) {
-    try {
-      content = await generateFacebookDraft(trend, brandVoice);
-    } catch (error) {
-      console.error("[ai] Draft generation failed", error);
-      const message =
-        error instanceof Anthropic.APIError
-          ? `Draft generation failed (${error.status ?? "API error"}). Please try again.`
-          : "Draft generation failed. Please try again.";
-      redirectWithError("/trends", message);
-    }
-  } else {
-    console.warn(
-      "[ai] ANTHROPIC_API_KEY is not set — using the template draft instead of AI generation.",
-    );
-    content = templateFacebookDraft(trend);
-  }
+  const content = generateFacebookDraft(trend);
 
   const { data: post, error: postError } = await supabase
     .from("posts")
