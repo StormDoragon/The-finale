@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Liberation OS",
-  description: "Turn useful trends into thoughtful Facebook posts.",
+  description:
+    "Monitor your Facebook pages: followers, reach, engagement, posts, and monetization progress.",
 };
 export default function RootLayout({
   children,

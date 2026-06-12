@@ -77,6 +77,58 @@ button {
   cursor: not-allowed;
   opacity: 0.55;
 }
+
+/* ── Dark dashboard theme ─────────────────────────────────────────────
+   Scoped under .dash (applied by AppShell) so the /login experience
+   keeps its original light styling. */
+.dash {
+  color-scheme: dark;
+}
+.dash .card {
+  border-color: #1c2740;
+  background: #0d1424;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.6);
+}
+.dash .field {
+  border-color: #283a5c;
+  background: #0a101e;
+  color: #f1f5f9;
+}
+.dash .field::placeholder {
+  color: #475569;
+}
+.dash .field:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12);
+}
+.dash .label {
+  color: #8da2c0;
+}
+.dash .btn-primary {
+  background: #10b981;
+  color: #06281e;
+}
+.dash .btn-primary:hover {
+  background: #34d399;
+}
+.dash .btn-secondary {
+  border-color: #283a5c;
+  background: #131c31;
+  color: #e2e8f0;
+}
+.dash .btn-secondary:hover {
+  border-color: #3e548a;
+}
+.dash .notice-error {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(127, 29, 29, 0.25);
+  color: #fca5a5;
+}
+.dash .notice-success {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(6, 78, 59, 0.3);
+  color: #6ee7b7;
+}
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
 button:focus-visible,

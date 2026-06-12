@@ -1,16 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { BarChart3, Compass, Menu, Settings, Sparkles, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
-
-const links = [
-  { href: "/dashboard", label: "Overview", icon: BarChart3 },
-  { href: "/trends", label: "Trends", icon: Compass },
-  { href: "/queue", label: "Post queue", icon: Sparkles },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { NavLinks } from "@/components/nav-links";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -19,7 +12,7 @@ export function MobileNav() {
     <>
       <button
         type="button"
-        className="grid size-9 place-items-center rounded-lg border bg-white lg:hidden"
+        className="grid size-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-200 lg:hidden"
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
         aria-expanded={open}
@@ -32,13 +25,13 @@ export function MobileNav() {
         <div className="fixed inset-0 z-50 lg:hidden">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/60"
             onClick={() => setOpen(false)}
           />
           {/* Drawer */}
           <aside
             id="mobile-navigation"
-            className="absolute inset-y-0 left-0 flex w-72 flex-col bg-slate-950 p-6 text-white"
+            className="absolute inset-y-0 left-0 flex w-72 flex-col border-r border-white/5 bg-[#0a101e] p-6 text-white"
             aria-label="Mobile navigation"
           >
             <div className="flex items-center justify-between">
@@ -52,18 +45,9 @@ export function MobileNav() {
                 <X size={18} />
               </button>
             </div>
-            <nav className="mt-10 space-y-2">
-              {links.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
-                >
-                  <Icon size={18} /> {label}
-                </Link>
-              ))}
-            </nav>
+            <div className="mt-10">
+              <NavLinks onNavigate={() => setOpen(false)} />
+            </div>
           </aside>
         </div>
       )}
