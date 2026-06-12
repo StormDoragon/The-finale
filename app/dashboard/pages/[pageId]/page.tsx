@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { AreaTrendChart, BarsChart } from "@/components/charts";
 import { EmptyState } from "@/components/empty-state";
-import { GraphIssues } from "@/components/graph-issues";
+import { GraphIssues, snapshotIssues } from "@/components/graph-issues";
 import { Notice } from "@/components/notice";
 import { PageHeader } from "@/components/page-header";
 import { PostTypeBadge, PublishedBadge } from "@/components/post-badges";
@@ -291,7 +291,7 @@ export default async function PageDetail({
         </div>
       </section>
 
-      <GraphIssues snapshots={[snapshot]} />
+      <GraphIssues issues={snapshotIssues([snapshot])} />
 
       {/* Tabs */}
       <div className="mt-6 flex gap-1 border-b border-white/5" role="tablist">

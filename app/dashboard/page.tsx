@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
-import { GraphIssues } from "@/components/graph-issues";
+import { GraphIssues, snapshotIssues } from "@/components/graph-issues";
 import { Notice } from "@/components/notice";
 import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "@/components/refresh-button";
@@ -221,7 +221,7 @@ export default async function DashboardPage() {
       >
         <RefreshButton />
       </PageHeader>
-      <GraphIssues snapshots={snapshots} />
+      <GraphIssues issues={snapshotIssues(snapshots)} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
