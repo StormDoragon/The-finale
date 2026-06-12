@@ -8,13 +8,10 @@ export default function DashboardLoading() {
   return (
     <>
       <PageHeaderSkeleton />
-      <StatGridSkeleton />
-      <div className="mt-4">
-        <StatGridSkeleton />
-      </div>
-      <div className="mt-8 grid gap-6 xl:grid-cols-2">
-        <PanelSkeleton className="h-64" />
-        <PanelSkeleton className="h-64" />
+      <StatGridSkeleton count={6} columns={3} />
+      <div className="mt-8 grid items-start gap-6 xl:grid-cols-[1.2fr_.8fr]">
+        <PanelSkeleton className="h-80" />
+        <PanelSkeleton className="h-80" />
       </div>
     </>
   );

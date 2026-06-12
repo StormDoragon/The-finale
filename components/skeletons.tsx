@@ -11,9 +11,19 @@ export function PageHeaderSkeleton() {
   );
 }
 
-export function StatGridSkeleton({ count = 4 }: { count?: number }) {
+export function StatGridSkeleton({
+  count = 4,
+  columns = 4,
+}: {
+  count?: number;
+  columns?: 3 | 4;
+}) {
+  const grid =
+    columns === 3
+      ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      : "grid gap-4 sm:grid-cols-2 xl:grid-cols-4";
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className={grid}>
       {Array.from({ length: count }, (_, index) => (
         <div key={index} className="card space-y-4 p-5">
           <Shimmer className="size-10 rounded-xl" />
