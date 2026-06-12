@@ -1,13 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  optionalHttpUrl,
-  optionalText,
-  postTransition,
+  facebookPageId,
+  pageAccessToken,
   requiredText,
   uuid,
   ValidationError,
-  writingStyle,
 } from "../lib/validation.ts";
 
 const validId = "c9b96c42-1b59-4ab2-9c3f-90f06f5ec03a";
@@ -18,39 +16,24 @@ test("requiredText trims valid input and rejects empty or oversized values", () 
   assert.throws(() => requiredText("too long", "Title", 3), ValidationError);
 });
 
-test("optionalText normalizes blank values to null", () => {
-  assert.equal(optionalText("  ", "Voice", 20), null);
-  assert.equal(optionalText("  direct  ", "Voice", 20), "direct");
+test("uuid accepts canonical identifiers only", () => {
+  assert.equal(uuid(validId, "page"), validId);
+  assert.equal(uuid(` ${validId} `, "page"), validId);
+  assert.throws(() => uuid("not-a-uuid", "page"), ValidationError);
+  assert.throws(() => uuid(null, "page"), ValidationError);
 });
 
-test("optionalHttpUrl accepts web URLs and blocks unsafe protocols", () => {
-  assert.equal(optionalHttpUrl("https://example.com/report"), "https://example.com/report");
-  assert.equal(optionalHttpUrl(""), null);
-  assert.throws(() => optionalHttpUrl("javascript:alert(1)"), ValidationError);
-  assert.throws(() => optionalHttpUrl("not a URL"), ValidationError);
+test("facebookPageId accepts numeric page identifiers", () => {
+  assert.equal(facebookPageId(" 123456789012345 "), "123456789012345");
+  assert.throws(() => facebookPageId("my-page"), ValidationError);
+  assert.throws(() => facebookPageId("12"), ValidationError);
+  assert.throws(() => facebookPageId(""), ValidationError);
+  assert.throws(() => facebookPageId("1".repeat(40)), ValidationError);
 });
 
-test("uuid accepts canonical IDs and rejects malformed identifiers", () => {
-  assert.equal(uuid(validId, "trend"), validId);
-  assert.throws(() => uuid("demo-1", "trend"), ValidationError);
-});
-
-test("postTransition enforces the editorial state machine", () => {
-  assert.deepEqual(postTransition("approved"), { next: "approved", current: "draft" });
-  assert.deepEqual(postTransition("published"), {
-    next: "published",
-    current: "approved",
-  });
-  assert.throws(() => postTransition("draft"), ValidationError);
-  assert.throws(() => postTransition("deleted"), ValidationError);
-});
-
-
-test("writingStyle accepts supported values and rejects invalid input", () => {
-  assert.equal(writingStyle("contrarian"), "contrarian");
-  assert.equal(writingStyle("educational"), "educational");
-  assert.equal(writingStyle("breaking_news"), "breaking_news");
-  assert.equal(writingStyle("story"), "story");
-  assert.throws(() => writingStyle("salesy"), ValidationError);
-  assert.throws(() => writingStyle(null), ValidationError);
+test("pageAccessToken rejects blanks, whitespace, and oversized tokens", () => {
+  assert.equal(pageAccessToken(" EAABtokenvalue123 "), "EAABtokenvalue123");
+  assert.throws(() => pageAccessToken("has space inside"), ValidationError);
+  assert.throws(() => pageAccessToken(""), ValidationError);
+  assert.throws(() => pageAccessToken("a".repeat(1001)), ValidationError);
 });

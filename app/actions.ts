@@ -2,21 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import {
-  generateFacebookDraft,
-  regenerateFacebookDraft,
-} from "@/lib/copy-engine";
+import { getPageProfile } from "@/lib/facebook/graph";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { resolveWritingStyle } from "@/lib/writing-styles";
 import {
-  optionalHttpUrl,
-  optionalText,
-  postTransition,
-  requiredText,
+  facebookPageId,
+  pageAccessToken,
   uuid,
   ValidationError,
-  writingStyle,
 } from "@/lib/validation";
+
+const SETTINGS_PATH = "/dashboard/settings";
 
 function redirectWithError(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
@@ -25,18 +21,6 @@ function redirectWithError(path: string, message: string): never {
 function validationFailure(error: unknown, path: string): never {
   if (error instanceof ValidationError) redirectWithError(path, error.message);
   throw error;
-}
-
-function databaseFailure(
-  context: string,
-  error: { message: string },
-  path: string,
-): never {
-  console.error(`[data] ${context}`, error);
-  redirectWithError(
-    path,
-    "Something went wrong while saving. Please try again.",
-  );
 }
 
 async function requireUser() {
@@ -51,296 +35,90 @@ async function requireUser() {
   return { supabase, user: data.user };
 }
 
+function requireAdminClient() {
+  const admin = createAdminClient();
+  if (!admin) {
+    redirectWithError(
+      SETTINGS_PATH,
+      "SUPABASE_SERVICE_ROLE_KEY is not configured, so page tokens cannot be stored.",
+    );
+  }
+  return admin;
+}
+
 export async function logout() {
-  const { supabase } = await requireUser();
-  const { error } = await supabase.auth.signOut();
-  if (error) console.warn("[auth] Sign out failed", error);
+  const supabase = await createClient();
+  if (supabase) {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.warn("[auth] Sign out failed", error);
+  }
   redirect("/login");
 }
 
-export async function addTrend(formData: FormData) {
-  const { supabase } = await requireUser();
-  let title: string;
-  let source: string;
-  let url: string | null;
-  let summary: string;
-
+export async function connectPage(formData: FormData) {
+  await requireUser();
+  let pageId: string;
+  let accessToken: string;
   try {
-    title = requiredText(formData.get("title"), "Title", 200);
-    source = requiredText(formData.get("source"), "Source", 200);
-    url = optionalHttpUrl(formData.get("url"));
-    summary = requiredText(formData.get("summary"), "Summary", 2000);
+    pageId = facebookPageId(formData.get("page_id"));
+    accessToken = pageAccessToken(formData.get("access_token"));
   } catch (error) {
-    validationFailure(error, "/trends");
+    validationFailure(error, SETTINGS_PATH);
   }
 
-  const { error } = await supabase.from("trends").insert({
-    title,
-    source,
-    url,
-    summary,
-    status: "new",
-  });
-  if (error) databaseFailure("Unable to add trend", error, "/trends");
-
-  revalidatePath("/trends");
-  revalidatePath("/dashboard");
-  redirect("/trends?message=Trend+saved");
-}
-
-export async function generatePost(formData: FormData) {
-  let trendId: string;
-  try {
-    trendId = uuid(formData.get("trend_id"), "trend");
-  } catch (error) {
-    validationFailure(error, "/trends");
+  // Prove the token actually works for this page before storing anything.
+  const profile = await getPageProfile(pageId, accessToken);
+  if (!profile.ok) {
+    const reason = profile.error.expiredToken
+      ? "the access token is expired or has been invalidated."
+      : profile.error.message;
+    redirectWithError(SETTINGS_PATH, `Facebook rejected the connection: ${reason}`);
   }
 
-  await generateDraft(trendId);
-  redirect("/queue?message=Draft+added+to+your+queue");
-}
-
-export async function generateDraft(trendId: string): Promise<string> {
-  const { supabase } = await requireUser();
-
-  const { data: trend, error: trendError } = await supabase
-    .from("trends")
-    .select("id, title, source, summary, status")
-    .eq("id", trendId)
-    .maybeSingle();
-  if (trendError) databaseFailure("Unable to load trend", trendError, "/trends");
-  if (!trend) redirectWithError("/trends", "That trend could not be found.");
-  if (trend.status !== "new") {
-    redirectWithError("/trends", "A draft has already been generated for that trend.");
-  }
-
-  const { data: existingPost, error: existingError } = await supabase
-    .from("posts")
-    .select("id")
-    .eq("trend_id", trendId)
-    .limit(1)
-    .maybeSingle();
-  if (existingError) {
-    databaseFailure("Unable to check existing draft", existingError, "/trends");
-  }
-  if (existingPost) {
-    await supabase.from("trends").update({ status: "used" }).eq("id", trendId);
-    redirectWithError("/trends", "A draft already exists for that trend.");
-  }
-
-  const { data: settings, error: settingsError } = await supabase
-    .from("settings")
-    .select("brand_voice, writing_style")
-    .limit(1)
-    .maybeSingle();
-  if (settingsError) {
-    console.warn("[data] Draft generated with default settings", settingsError);
-  }
-  const brandVoice = settings?.brand_voice?.trim() ?? "";
-  const selectedWritingStyle = resolveWritingStyle(settings?.writing_style);
-  const content = generateFacebookDraft(trend, selectedWritingStyle);
-
-  const { data: post, error: postError } = await supabase
-    .from("posts")
-    .insert({
-      trend_id: trendId,
-      platform: "facebook",
-      content,
-      editorial_note: brandVoice || null,
-      status: "draft",
-    })
-    .select("id")
-    .single();
-  if (postError || !post) {
-    databaseFailure(
-      "Unable to create draft",
-      postError ?? { message: "Insert returned no row" },
-      "/trends",
-    );
-  }
-
-  const { error: updateError } = await supabase
-    .from("trends")
-    .update({ status: "used" })
-    .eq("id", trendId);
-  if (updateError) {
-    console.error("[data] Draft created but trend status was not updated", updateError);
-  }
-
-  revalidatePath("/trends");
-  revalidatePath("/queue");
-  revalidatePath("/dashboard");
-  return post.id;
-}
-
-export async function updatePostContent(
-  postId: string,
-  contentValue: string,
-): Promise<string> {
-  const { supabase } = await requireUser();
-  let id: string;
-  let content: string;
-  try {
-    id = uuid(postId, "post");
-    content = requiredText(contentValue, "Post content", 5000);
-  } catch (error) {
-    validationFailure(error, "/queue");
-  }
-
-  const { data, error } = await supabase
-    .from("posts")
-    .update({ content })
-    .eq("id", id)
-    .eq("status", "draft")
-    .select("content")
-    .maybeSingle();
-  if (error) databaseFailure("Unable to update draft content", error, "/queue");
-  if (!data) {
-    redirectWithError(
-      "/queue",
-      "Only draft posts can be edited. Refresh and try again.",
-    );
-  }
-
-  revalidatePath("/queue");
-  return data.content;
-}
-
-export async function regeneratePost(postId: string): Promise<string> {
-  const { supabase } = await requireUser();
-  let id: string;
-  try {
-    id = uuid(postId, "post");
-  } catch (error) {
-    validationFailure(error, "/queue");
-  }
-
-  const { data: post, error: postError } = await supabase
-    .from("posts")
-    .select("id, trend_id, content, status")
-    .eq("id", id)
-    .maybeSingle();
-  if (postError) databaseFailure("Unable to load draft", postError, "/queue");
-  if (!post || post.status !== "draft") {
-    redirectWithError(
-      "/queue",
-      "Only draft posts can be regenerated. Refresh and try again.",
-    );
-  }
-  if (!post.trend_id) {
-    redirectWithError("/queue", "This draft is not linked to a trend.");
-  }
-
-  const { data: trend, error: trendError } = await supabase
-    .from("trends")
-    .select("title, source, summary")
-    .eq("id", post.trend_id)
-    .maybeSingle();
-  if (trendError) {
-    databaseFailure("Unable to load draft trend", trendError, "/queue");
-  }
-  if (!trend) {
-    redirectWithError("/queue", "That draft's trend could not be found.");
-  }
-
-  const { data: settings, error: settingsError } = await supabase
-    .from("settings")
-    .select("writing_style")
-    .limit(1)
-    .maybeSingle();
-  if (settingsError) {
-    console.warn("[data] Draft regenerated with the default writing style", settingsError);
-  }
-
-  const selectedWritingStyle = resolveWritingStyle(settings?.writing_style);
-  const content = regenerateFacebookDraft(
-    trend,
-    post.content,
-    selectedWritingStyle,
-  );
-  const { data: updatedPost, error: updateError } = await supabase
-    .from("posts")
-    .update({ content })
-    .eq("id", id)
-    .eq("status", "draft")
-    .select("content")
-    .maybeSingle();
-  if (updateError) {
-    databaseFailure("Unable to regenerate draft", updateError, "/queue");
-  }
-  if (!updatedPost) {
-    redirectWithError(
-      "/queue",
-      "That post changed before your request. Refresh and try again.",
-    );
-  }
-
-  revalidatePath("/queue");
-  return updatedPost.content;
-}
-
-export async function updatePostStatus(formData: FormData) {
-  const { supabase } = await requireUser();
-  let id: string;
-  let transition: ReturnType<typeof postTransition>;
-  try {
-    id = uuid(formData.get("id"), "post");
-    transition = postTransition(formData.get("status"));
-  } catch (error) {
-    validationFailure(error, "/queue");
-  }
-
-  const now = new Date().toISOString();
-  const timestamps =
-    transition.next === "approved"
-      ? { approved_at: now }
-      : transition.next === "published"
-        ? { published_at: now }
-        : {};
-  const { data, error } = await supabase
-    .from("posts")
-    .update({ status: transition.next, ...timestamps })
-    .eq("id", id)
-    .eq("status", transition.current)
-    .select("id")
-    .maybeSingle();
-  if (error) databaseFailure("Unable to update post", error, "/queue");
-  if (!data) {
-    redirectWithError("/queue", "That post changed before your request. Refresh and try again.");
-  }
-
-  revalidatePath("/queue");
-  revalidatePath("/dashboard");
-}
-
-export async function saveSettings(formData: FormData) {
-  const { supabase, user } = await requireUser();
-  let facebookPageId: string | null;
-  let brandVoice: string | null;
-  let selectedWritingStyle: ReturnType<typeof writingStyle>;
-  try {
-    facebookPageId = optionalText(
-      formData.get("facebook_page_id"),
-      "Facebook Page ID",
-      100,
-    );
-    brandVoice = optionalText(formData.get("brand_voice"), "Brand voice", 2000);
-    selectedWritingStyle = writingStyle(formData.get("writing_style"));
-  } catch (error) {
-    validationFailure(error, "/settings");
-  }
-
-  const { error } = await supabase.from("settings").upsert(
+  const admin = requireAdminClient();
+  const { error } = await admin.from("page_tokens").upsert(
     {
-      owner_id: user.id,
-      facebook_page_id: facebookPageId,
-      brand_voice: brandVoice,
-      writing_style: selectedWritingStyle,
+      page_id: pageId,
+      page_name: profile.data.name,
+      access_token: accessToken,
     },
-    { onConflict: "owner_id" },
+    { onConflict: "page_id" },
   );
-  if (error) databaseFailure("Unable to save settings", error, "/settings");
+  if (error) {
+    console.error("[data] Unable to store page token", error);
+    redirectWithError(
+      SETTINGS_PATH,
+      "The page could not be saved. Please try again.",
+    );
+  }
 
-  revalidatePath("/settings");
-  redirect("/settings?message=Settings+saved");
+  revalidatePath(SETTINGS_PATH);
+  revalidatePath("/dashboard");
+  redirect(
+    `${SETTINGS_PATH}?message=${encodeURIComponent(`Connected ${profile.data.name}`)}`,
+  );
+}
+
+export async function disconnectPage(formData: FormData) {
+  await requireUser();
+  let id: string;
+  try {
+    id = uuid(formData.get("id"), "page");
+  } catch (error) {
+    validationFailure(error, SETTINGS_PATH);
+  }
+
+  const admin = requireAdminClient();
+  const { error } = await admin.from("page_tokens").delete().eq("id", id);
+  if (error) {
+    console.error("[data] Unable to remove page", error);
+    redirectWithError(
+      SETTINGS_PATH,
+      "The page could not be removed. Please try again.",
+    );
+  }
+
+  revalidatePath(SETTINGS_PATH);
+  revalidatePath("/dashboard");
+  redirect(`${SETTINGS_PATH}?message=Page+removed`);
 }

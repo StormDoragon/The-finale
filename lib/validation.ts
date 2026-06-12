@@ -1,8 +1,7 @@
-import type { PostStatus } from "./types";
-import { isWritingStyle, type WritingStyle } from "./writing-styles.ts";
-
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const PAGE_ID_PATTERN = /^\d{3,32}$/;
 
 export class ValidationError extends Error {}
 
@@ -19,61 +18,26 @@ export function requiredText(
   return text;
 }
 
-export function optionalText(
-  value: FormDataEntryValue | null,
-  label: string,
-  maxLength: number,
-) {
-  const text = typeof value === "string" ? value.trim() : "";
-  if (text.length > maxLength) {
-    throw new ValidationError(`${label} must be ${maxLength} characters or less.`);
-  }
-  return text || null;
-}
-
-export function writingStyle(value: FormDataEntryValue | null): WritingStyle {
-  if (!isWritingStyle(value)) {
-    throw new ValidationError("Choose a valid writing style.");
-  }
-  return value;
-}
-
-export function optionalHttpUrl(value: FormDataEntryValue | null) {
-  const text = optionalText(value, "Source URL", 500);
-  if (!text) return null;
-
-  let url: URL;
-  try {
-    url = new URL(text);
-  } catch {
-    throw new ValidationError("Source URL must be a valid web address.");
-  }
-
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new ValidationError("Source URL must use HTTP or HTTPS.");
-  }
-  return url.toString();
-}
-
 export function uuid(value: FormDataEntryValue | null, label: string) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!UUID_PATTERN.test(text)) throw new ValidationError(`Invalid ${label}.`);
   return text;
 }
 
-const TRANSITIONS = {
-  approved: "draft",
-  rejected: "draft",
-  published: "approved",
-} as const satisfies Partial<Record<PostStatus, PostStatus>>;
-
-export type ActionablePostStatus = keyof typeof TRANSITIONS;
-
-export function postTransition(value: FormDataEntryValue | null) {
-  const status = typeof value === "string" ? value : "";
-  if (!(status in TRANSITIONS)) {
-    throw new ValidationError("That post status change is not allowed.");
+export function facebookPageId(value: FormDataEntryValue | null) {
+  const text = requiredText(value, "Page ID", 32);
+  if (!PAGE_ID_PATTERN.test(text)) {
+    throw new ValidationError(
+      "Page ID must be the numeric Facebook page identifier.",
+    );
   }
-  const next = status as ActionablePostStatus;
-  return { next, current: TRANSITIONS[next] };
+  return text;
+}
+
+export function pageAccessToken(value: FormDataEntryValue | null) {
+  const text = requiredText(value, "Access token", 1000);
+  if (/\s/.test(text)) {
+    throw new ValidationError("Access token must not contain spaces.");
+  }
+  return text;
 }
