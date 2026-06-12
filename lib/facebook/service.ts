@@ -93,7 +93,10 @@ export async function loadPageSnapshot(
       period: "day",
       sinceDays,
     }),
-    getPagePosts(page.pageId, page.name, page.accessToken, postLimit),
+    // postLimit 0 skips the posts request entirely (e.g. monetization).
+    postLimit > 0
+      ? getPagePosts(page.pageId, page.name, page.accessToken, postLimit)
+      : Promise.resolve({ ok: true as const, data: [] as PagePost[] }),
   ]);
   const errors: GraphError[] = [];
   if (!profile.ok) errors.push(profile.error);
