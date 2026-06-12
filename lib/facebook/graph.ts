@@ -1,7 +1,17 @@
+import {
+  METRIC,
+  latestBreakdown,
+  normalizePost,
+  toInsightSeries,
+} from "@/lib/facebook/analysis";
 import type {
   GraphResult,
+  InsightSeries,
+  PagePost,
   PageProfile,
+  RawInsight,
   RawPageProfile,
+  RawPost,
 } from "@/lib/facebook/types";
 
 /**
@@ -64,6 +74,8 @@ export async function graphGet<T>(
   return { ok: true, data: payload as T };
 }
 
+// ── Page profile ────────────────────────────────────────────────────
+
 const PAGE_PROFILE_FIELDS = [
   "id",
   "name",
@@ -112,4 +124,150 @@ export async function verifyToken(
     { fields: "id,name" },
     accessToken,
   );
+}
+
+// ── Posts ───────────────────────────────────────────────────────────
+
+const POST_FIELDS = [
+  "id",
+  "message",
+  "story",
+  "created_time",
+  "permalink_url",
+  "full_picture",
+  "status_type",
+  "is_published",
+  "shares",
+  "likes.summary(true).limit(0)",
+  "comments.summary(true).limit(0)",
+  "attachments{media_type,type}",
+].join(",");
+
+const POST_FIELDS_WITH_INSIGHTS = `${POST_FIELDS},insights.metric(${METRIC.postReach})`;
+
+/**
+ * Latest published posts, newest first. Per-post reach comes from the
+ * insights field expansion; when the token lacks read_insights the call is
+ * retried without it so the rest of the data still loads (reach stays null).
+ */
+export async function getPagePosts(
+  pageId: string,
+  pageName: string,
+  accessToken: string,
+  limit = 25,
+): Promise<GraphResult<PagePost[]>> {
+  const withInsights = await graphGet<{ data?: RawPost[] }>(
+    `${pageId}/posts`,
+    { fields: POST_FIELDS_WITH_INSIGHTS, limit },
+    accessToken,
+  );
+  let raws: RawPost[];
+  if (withInsights.ok) {
+    raws = withInsights.data.data ?? [];
+  } else {
+    if (withInsights.error.expiredToken) return withInsights;
+    const fallback = await graphGet<{ data?: RawPost[] }>(
+      `${pageId}/posts`,
+      { fields: POST_FIELDS, limit },
+      accessToken,
+    );
+    if (!fallback.ok) return fallback;
+    raws = fallback.data.data ?? [];
+  }
+  return {
+    ok: true,
+    data: raws.map((raw) => normalizePost(raw, pageId, pageName)),
+  };
+}
+
+// ── Insights ────────────────────────────────────────────────────────
+
+export type InsightPeriod = "day" | "week" | "days_28" | "lifetime";
+
+/**
+ * One unsupported metric makes Facebook fail the whole insights call, so on
+ * failure each metric is retried individually and whatever the page can
+ * serve is kept.
+ */
+async function fetchInsightsResilient(
+  pageId: string,
+  accessToken: string,
+  metrics: string[],
+  params: Record<string, string | number | undefined>,
+): Promise<GraphResult<RawInsight[]>> {
+  const combined = await graphGet<{ data?: RawInsight[] }>(
+    `${pageId}/insights`,
+    { ...params, metric: metrics.join(",") },
+    accessToken,
+  );
+  if (combined.ok) return { ok: true, data: combined.data.data ?? [] };
+  if (combined.error.expiredToken || metrics.length === 1) return combined;
+
+  const collected: RawInsight[] = [];
+  let lastError = combined.error;
+  for (const metric of metrics) {
+    const single = await graphGet<{ data?: RawInsight[] }>(
+      `${pageId}/insights`,
+      { ...params, metric },
+      accessToken,
+    );
+    if (single.ok) {
+      collected.push(...(single.data.data ?? []));
+    } else {
+      if (single.error.expiredToken) return single;
+      lastError = single.error;
+    }
+  }
+  return collected.length
+    ? { ok: true, data: collected }
+    : { ok: false, error: lastError };
+}
+
+export async function getPageInsights(
+  pageId: string,
+  accessToken: string,
+  metrics: string[],
+  options: { period?: InsightPeriod; sinceDays?: number } = {},
+): Promise<GraphResult<InsightSeries>> {
+  const { period = "day", sinceDays } = options;
+  const params: Record<string, string | number | undefined> = { period };
+  if (sinceDays !== undefined) {
+    const now = Math.floor(Date.now() / 1000);
+    params.since = now - sinceDays * 86400;
+    params.until = now;
+  }
+  const result = await fetchInsightsResilient(
+    pageId,
+    accessToken,
+    metrics,
+    params,
+  );
+  if (!result.ok) return result;
+  return { ok: true, data: toInsightSeries(result.data) };
+}
+
+export type PageDemographics = {
+  genderAge: Record<string, number> | null;
+  countries: Record<string, number> | null;
+};
+
+/** Lifetime audience breakdowns; either side is null when Facebook withholds it. */
+export async function getPageDemographics(
+  pageId: string,
+  accessToken: string,
+): Promise<GraphResult<PageDemographics>> {
+  const result = await fetchInsightsResilient(
+    pageId,
+    accessToken,
+    [METRIC.fansGenderAge, METRIC.fansCountry],
+    { period: "lifetime" },
+  );
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    data: {
+      genderAge: latestBreakdown(result.data, METRIC.fansGenderAge),
+      countries: latestBreakdown(result.data, METRIC.fansCountry),
+    },
+  };
 }
