@@ -13,10 +13,10 @@ import type {
  * execute it directly with type stripping.
  */
 
-// Graph API insight metric names, targeting Graph API v21.0.
+// Graph API insight metric names, targeting Graph API v25.0.
 //
 // `reach` uses the `_v2` rename Meta shipped on 2024-09-16; the legacy
-// `page_impressions_unique` returns an invalid-metric error on v21.0.
+// `page_impressions_unique` returns an invalid-metric error on v21.0+.
 //
 // Follower metrics use the New Page Experience names that replaced the removed
 // "page fans" family: `page_follows` (running follower total, replacing

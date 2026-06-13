@@ -17,7 +17,7 @@ Every data-fetching view has loading skeletons, renders an empty state with a re
 
 ## Stack
 
-Next.js 15 (App Router), TypeScript, Tailwind CSS 4, Recharts, and Supabase (Auth + Postgres). Deployed on Vercel. All Graph API calls run server-side against `https://graph.facebook.com/v19.0`; tokens never reach the browser.
+Next.js 15 (App Router), TypeScript, Tailwind CSS 4, Recharts, and Supabase (Auth + Postgres). Deployed on Vercel. All Graph API calls run server-side against `https://graph.facebook.com/v25.0`; tokens never reach the browser.
 
 ## Local setup
 

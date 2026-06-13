@@ -17,7 +17,7 @@ import type {
  * reach the browser: only import this module from server components, server
  * actions, or route handlers.
  */
-const GRAPH_BASE = "https://graph.facebook.com/v21.0";
+const GRAPH_BASE = "https://graph.facebook.com/v25.0";
 
 type RawErrorBody = { error?: { message?: string; code?: number } };
 
