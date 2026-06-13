@@ -24,16 +24,16 @@ export default function LoginPage() {
         <Logo light />
         <div className="my-auto max-w-lg">
           <p className="mb-5 text-sm font-semibold uppercase tracking-[.2em] text-emerald-300">
-            Your editorial command center
+            Facebook page monitoring
           </p>
           <h1 className="text-5xl font-semibold leading-[1.08] tracking-tight">
-            From a useful signal to a publish-ready post.
+            Your Facebook pages, at a glance.
           </h1>
           <div className="mt-10 space-y-4 text-slate-300">
             {[
-              "Collect the trends worth keeping",
-              "Create focused Facebook drafts",
-              "Review every post before it goes live",
+              "Monitor followers and reach across all your pages",
+              "Track engagement trends and top posts",
+              "Get alerted when tokens expire or data stops loading",
             ].map((text) => (
               <p key={text} className="flex gap-3">
                 <CheckCircle2 className="mt-0.5 text-emerald-300" size={19} />{" "}
@@ -56,7 +56,7 @@ export default function LoginPage() {
             Sign in to your workspace
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            Keep your trend-to-post workflow in one quiet place.
+            Live metrics, reach, and engagement — all in one quiet place.
           </p>
           <div className="mt-7">
             <Suspense fallback={null}>

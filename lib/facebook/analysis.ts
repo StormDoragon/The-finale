@@ -13,14 +13,32 @@ import type {
  * execute it directly with type stripping.
  */
 
+// Graph API insight metric names, verified against Graph API v21.0.
+//
+// `reach` uses the `_v2` rename Meta shipped on 2024-09-16; the legacy
+// `page_impressions_unique` returns an invalid-metric error on v21.0. The
+// `_v2` rename only applied to the unique-impressions/reach family, so
+// `engagements`, `fanAdds`, `videoViews`, and `postReach` keep their original
+// names and remain valid.
+//
+// TODO(graph-deprecation): Meta is removing the "page fans" family from the
+// Page Insights API with no replacement — age/gender demographics were removed
+// 2024-09-16 and the remaining page-fans metrics were deprecated 2025-11-15, so
+// `fans`, `fansGenderAge`, and `fansCountry` now return invalid-metric errors.
+// They are left in place (rather than commented out) only because the dashboard
+// and the test suite still reference these keys, and the Graph client already
+// degrades gracefully when Facebook rejects a metric (per-metric retry, null
+// breakdowns). Total followers already come from the page `fan_count` field, so
+// migrate the growth/demographics call sites off these series and then drop the
+// three keys below.
 export const METRIC = {
-  fans: "page_fans",
+  fans: "page_fans", // deprecated on v21.0 — no replacement (see TODO above)
   reach: "page_impressions_unique_v2",
   engagements: "page_post_engagements",
   fanAdds: "page_fan_adds",
   videoViews: "page_video_views",
-  fansGenderAge: "page_fans_gender_age",
-  fansCountry: "page_fans_country",
+  fansGenderAge: "page_fans_gender_age", // deprecated on v21.0 — no replacement
+  fansCountry: "page_fans_country", // deprecated on v21.0 — no replacement
   postReach: "post_impressions_unique",
 } as const;
 
