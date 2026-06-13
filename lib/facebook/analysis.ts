@@ -13,21 +13,26 @@ import type {
  * execute it directly with type stripping.
  */
 
-// Graph API insight metric names, targeting Graph API v25.0.
+// Graph API insight metric names, verified against the Graph API v25.0 Page
+// Insights reference. Each maps to a metric the v25.0 docs still list:
+//   page_follows            — running follower total (follows − unfollows), day
+//   page_impressions_unique — daily reach (people who saw Page content)
+//   page_post_engagements   — reactions, comments, shares, and more
+//   page_daily_follows      — new follows per day
+//   page_video_views        — 3s+ video plays
+//   post_impressions_unique — per-post reach (lifetime, via field expansion)
 //
-// `reach` uses the `_v2` rename Meta shipped on 2024-09-16; the legacy
-// `page_impressions_unique` returns an invalid-metric error on v21.0+.
+// `page_follows` / `page_daily_follows` are the New Page Experience metrics that
+// replaced the removed `page_fans` / `page_fan_adds`. The lifetime fan
+// demographics have no forward-looking Graph replacement (`page_fans_gender_age`
+// is already gone from v25.0; `page_fans_country` is on Meta's deprecation
+// path), so the audience cards were dropped rather than migrated.
 //
-// Follower metrics use the New Page Experience names that replaced the removed
-// "page fans" family: `page_follows` (running follower total, replacing
-// `page_fans`) and `page_daily_follows` (daily new follows, replacing
-// `page_fan_adds`). The lifetime fan demographics (`page_fans_gender_age`,
-// `page_fans_country`) were removed from the Page Insights API with no Graph
-// replacement, so those requests and the audience cards were dropped rather
-// than migrated — Meta only exposes that data in Business Suite now.
+// NOTE: Meta is deprecating a further batch of Page Insights metrics for all API
+// versions on 2026-06-15 — re-verify these against the changelog around then.
 export const METRIC = {
   fans: "page_follows",
-  reach: "page_impressions_unique_v2",
+  reach: "page_impressions_unique",
   engagements: "page_post_engagements",
   fanAdds: "page_daily_follows",
   videoViews: "page_video_views",
