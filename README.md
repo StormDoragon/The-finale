@@ -8,7 +8,7 @@ A dashboard and monitoring tool for Facebook pages. Liberation OS no longer crea
 - **Pages** (`/dashboard/pages`) — every connected page with profile picture, category, and follower count. Click into a page for:
   - **Overview** — 30-day follower, reach, and engagement charts.
   - **Posts** — the last 20 published posts with likes, comments, shares, reach, type, and published status.
-  - **Insights** — best posting hours and days (by average engagement), top post formats, and audience demographics when Facebook provides them.
+  - **Insights** — best posting hours and days (by average engagement) and top post formats.
 - **Posts** (`/dashboard/posts`) — a global feed across all pages with filters (page, date range, post type) and sorting (date, reach, engagement).
 - **Monetization** (`/dashboard/monetization`) — progress bars toward Meta's thresholds (10,000 followers; 600,000 reel plays in 60 days, approximated from daily video views) with estimated days to target and an in-stream ads eligibility estimate.
 - **Settings** (`/dashboard/settings`) — connect/remove pages and store their access tokens. Each token is verified against the Graph API before saving and re-checked on every visit, so expired tokens are flagged immediately.

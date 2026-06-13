@@ -26,7 +26,6 @@ import {
   postFormatBreakdown,
   topBuckets,
 } from "@/lib/facebook/analysis";
-import { getPageDemographics } from "@/lib/facebook/graph";
 import { getConnectedPages, loadPageSnapshot } from "@/lib/facebook/service";
 import type { PagePost } from "@/lib/facebook/types";
 import {
@@ -130,44 +129,6 @@ function PostRow({ post }: { post: PagePost }) {
   );
 }
 
-function BreakdownBars({
-  entries,
-  emptyMessage,
-}: {
-  entries: [string, number][] | null;
-  emptyMessage: string;
-}) {
-  if (!entries || entries.length === 0) {
-    return <p className="py-6 text-center text-sm text-slate-500">{emptyMessage}</p>;
-  }
-  const max = Math.max(...entries.map(([, value]) => value));
-  return (
-    <div className="mt-4 space-y-3">
-      {entries.map(([label, value]) => (
-        <div key={label}>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-300">{label}</span>
-            <span className="text-slate-500">{formatCompact(value)}</span>
-          </div>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/5">
-            <div
-              className="h-full rounded-full bg-sky-400/70"
-              style={{ width: `${Math.max(4, Math.round((value / max) * 100))}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** "F.25-34" → "Women 25-34". */
-function genderAgeLabel(key: string): string {
-  const [gender, age] = key.split(".");
-  const names: Record<string, string> = { F: "Women", M: "Men", U: "Other" };
-  return `${names[gender] ?? gender} ${age ?? ""}`.trim();
-}
-
 export default async function PageDetail({
   params,
   searchParams,
@@ -206,12 +167,10 @@ export default async function PageDetail({
     );
   }
 
-  const [snapshot, demographics] = await Promise.all([
-    loadPageSnapshot(page, { sinceDays: 30, postLimit: 50 }),
-    tab === "insights"
-      ? getPageDemographics(page.pageId, page.accessToken)
-      : Promise.resolve(null),
-  ]);
+  const snapshot = await loadPageSnapshot(page, {
+    sinceDays: 30,
+    postLimit: 50,
+  });
   const profile = snapshot.profile;
   const recentPosts = snapshot.posts;
   const displayedPosts = recentPosts.slice(0, 20);
@@ -493,43 +452,6 @@ export default async function PageDetail({
               <NoChartData />
             )}
           </ChartCard>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <ChartCard
-              title="Audience countries"
-              caption="Lifetime followers by country"
-            >
-              <BreakdownBars
-                entries={
-                  demographics?.ok && demographics.data.countries
-                    ? Object.entries(demographics.data.countries)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 8)
-                    : null
-                }
-                emptyMessage="Facebook didn't return country demographics for this page."
-              />
-            </ChartCard>
-            <ChartCard
-              title="Audience gender & age"
-              caption="Lifetime followers by gender and age band"
-            >
-              <BreakdownBars
-                entries={
-                  demographics?.ok && demographics.data.genderAge
-                    ? Object.entries(demographics.data.genderAge)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 8)
-                        .map(
-                          ([key, value]) =>
-                            [genderAgeLabel(key), value] as [string, number],
-                        )
-                    : null
-                }
-                emptyMessage="Facebook didn't return gender and age demographics for this page."
-              />
-            </ChartCard>
-          </div>
         </div>
       )}
     </>

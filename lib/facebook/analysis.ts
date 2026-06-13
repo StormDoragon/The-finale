@@ -13,32 +13,24 @@ import type {
  * execute it directly with type stripping.
  */
 
-// Graph API insight metric names, verified against Graph API v21.0.
+// Graph API insight metric names, targeting Graph API v21.0.
 //
 // `reach` uses the `_v2` rename Meta shipped on 2024-09-16; the legacy
-// `page_impressions_unique` returns an invalid-metric error on v21.0. The
-// `_v2` rename only applied to the unique-impressions/reach family, so
-// `engagements`, `fanAdds`, `videoViews`, and `postReach` keep their original
-// names and remain valid.
+// `page_impressions_unique` returns an invalid-metric error on v21.0.
 //
-// TODO(graph-deprecation): Meta is removing the "page fans" family from the
-// Page Insights API with no replacement — age/gender demographics were removed
-// 2024-09-16 and the remaining page-fans metrics were deprecated 2025-11-15, so
-// `fans`, `fansGenderAge`, and `fansCountry` now return invalid-metric errors.
-// They are left in place (rather than commented out) only because the dashboard
-// and the test suite still reference these keys, and the Graph client already
-// degrades gracefully when Facebook rejects a metric (per-metric retry, null
-// breakdowns). Total followers already come from the page `fan_count` field, so
-// migrate the growth/demographics call sites off these series and then drop the
-// three keys below.
+// Follower metrics use the New Page Experience names that replaced the removed
+// "page fans" family: `page_follows` (running follower total, replacing
+// `page_fans`) and `page_daily_follows` (daily new follows, replacing
+// `page_fan_adds`). The lifetime fan demographics (`page_fans_gender_age`,
+// `page_fans_country`) were removed from the Page Insights API with no Graph
+// replacement, so those requests and the audience cards were dropped rather
+// than migrated — Meta only exposes that data in Business Suite now.
 export const METRIC = {
-  fans: "page_fans", // deprecated on v21.0 — no replacement (see TODO above)
+  fans: "page_follows",
   reach: "page_impressions_unique_v2",
   engagements: "page_post_engagements",
-  fanAdds: "page_fan_adds",
+  fanAdds: "page_daily_follows",
   videoViews: "page_video_views",
-  fansGenderAge: "page_fans_gender_age", // deprecated on v21.0 — no replacement
-  fansCountry: "page_fans_country", // deprecated on v21.0 — no replacement
   postReach: "post_impressions_unique",
 } as const;
 

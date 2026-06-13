@@ -1,9 +1,4 @@
-import {
-  METRIC,
-  latestBreakdown,
-  normalizePost,
-  toInsightSeries,
-} from "@/lib/facebook/analysis";
+import { METRIC, normalizePost, toInsightSeries } from "@/lib/facebook/analysis";
 import type {
   GraphResult,
   InsightSeries,
@@ -244,30 +239,4 @@ export async function getPageInsights(
   );
   if (!result.ok) return result;
   return { ok: true, data: toInsightSeries(result.data) };
-}
-
-export type PageDemographics = {
-  genderAge: Record<string, number> | null;
-  countries: Record<string, number> | null;
-};
-
-/** Lifetime audience breakdowns; either side is null when Facebook withholds it. */
-export async function getPageDemographics(
-  pageId: string,
-  accessToken: string,
-): Promise<GraphResult<PageDemographics>> {
-  const result = await fetchInsightsResilient(
-    pageId,
-    accessToken,
-    [METRIC.fansGenderAge, METRIC.fansCountry],
-    { period: "lifetime" },
-  );
-  if (!result.ok) return result;
-  return {
-    ok: true,
-    data: {
-      genderAge: latestBreakdown(result.data, METRIC.fansGenderAge),
-      countries: latestBreakdown(result.data, METRIC.fansCountry),
-    },
-  };
 }
