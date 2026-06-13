@@ -100,7 +100,11 @@ export async function getPageProfile(
       id: raw.id,
       name: raw.name,
       category: raw.category ?? null,
-      fanCount: raw.fan_count ?? 0,
+      // The dashboard labels this "followers". Prefer followers_count so the
+      // number is right for both classic Pages (where fan_count is likes) and
+      // New Page Experience Pages (where Graph makes fan_count mirror
+      // followers_count anyway); fall back to fan_count when it is absent.
+      fanCount: raw.followers_count ?? raw.fan_count ?? 0,
       followersCount: raw.followers_count ?? null,
       about: raw.about ?? null,
       link: raw.link ?? null,
