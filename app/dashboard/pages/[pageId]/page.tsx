@@ -214,6 +214,7 @@ export default async function PageDetail({
   ]);
   const profile = snapshot.profile;
   const recentPosts = snapshot.posts;
+  const displayedPosts = recentPosts.slice(0, 20);
 
   const followerPoints = toChartPoints(snapshot.series[METRIC.fans]);
   const reachPoints = toChartPoints(snapshot.series[METRIC.reach]);
@@ -366,11 +367,11 @@ export default async function PageDetail({
           <div className="border-b border-white/5 p-5">
             <h2 className="font-semibold text-white">Latest posts</h2>
             <p className="mt-1 text-xs text-slate-400">
-              The 20 most recent published posts on this page
+              The {displayedPosts.length} most recent published posts on this page
             </p>
           </div>
           <div className="divide-y divide-white/5">
-            {recentPosts.slice(0, 20).map((post) => (
+            {displayedPosts.map((post) => (
               <PostRow key={post.id} post={post} />
             ))}
             {recentPosts.length === 0 && (

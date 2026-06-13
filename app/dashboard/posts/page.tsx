@@ -153,6 +153,7 @@ export default async function PostsMonitor({
             method="get"
             className="card mb-6 flex flex-wrap items-end gap-4 p-4"
           >
+            <input type="hidden" name="sort" value={sort} />
             <div className="min-w-40 flex-1 sm:flex-none">
               <label className="label" htmlFor="filter-page">
                 Page
