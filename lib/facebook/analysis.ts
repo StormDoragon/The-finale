@@ -15,9 +15,9 @@ import type {
 
 export const METRIC = {
   fans: "page_fans",
-  reach: "page_impressions_unique",
+  reach: "page_impressions_unique_v2",
   engagements: "page_post_engagements",
-  fanAdds: "page_fan_adds_unique",
+  fanAdds: "page_fan_adds",
   videoViews: "page_video_views",
   fansGenderAge: "page_fans_gender_age",
   fansCountry: "page_fans_country",
